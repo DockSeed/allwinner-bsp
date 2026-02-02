@@ -2161,7 +2161,6 @@ int sunxi_spi_sync_atomic(struct spi_device *spi, struct spi_message *message)
 out:
 	message->status = ret;
 	ctlr->cur_msg = NULL;
-	ctlr->cur_msg_prepared = false;
 
 	return ret;
 }

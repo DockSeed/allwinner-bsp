@@ -996,10 +996,10 @@ int input_set_int_enable_force(enum input_sensor_type *input_type, u32 enable)
 	if ((enable != 0) && (enable != 1))
 		return ret;
 
-	desc = irq_to_desc(irq_number);
+	desc = irq_data_to_desc(irq_get_irq_data(irq_number));
 	if (enable == 1) {
 		while (desc->depth >= 1)
-			enable_irq(irq_number);
+		enable_irq(irq_number);
 	} else {
 		disable_irq_nosync(irq_number);
 	}
