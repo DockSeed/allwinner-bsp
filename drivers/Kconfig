@@ -33,12 +33,9 @@ source "$(BSP_TOP)drivers/vfe/Kconfig"
 source "$(BSP_TOP)drivers/tvd/Kconfig"
 source "$(BSP_TOP)drivers/drm/Kconfig"
 source "$(BSP_TOP)drivers/gpu/Kconfig"
-source "$(BSP_TOP)drivers/car_reverse/car_reverse_2_0/Kconfig"
-source "$(BSP_TOP)drivers/car_reverse/car_reverse_amp/Kconfig"
 
 # Multi-Media
 source "$(BSP_TOP)drivers/ve/Kconfig"
-source "$(BSP_TOP)drivers/rt-media/Kconfig"
 
 # Audio
 source "$(BSP_TOP)drivers/sound/Kconfig"
@@ -69,13 +66,9 @@ source "$(BSP_TOP)drivers/lradc/Kconfig"
 source "$(BSP_TOP)drivers/rtp/Kconfig"
 source "$(BSP_TOP)drivers/input/Kconfig"
 source "$(BSP_TOP)drivers/ata/Kconfig"
-source "$(BSP_TOP)drivers/smartcard/Kconfig"
-source "$(BSP_TOP)drivers/wiegand/Kconfig"
-source "$(BSP_TOP)drivers/dram_info/Kconfig"
 
 # Wireless
 source "$(BSP_TOP)drivers/net/Kconfig"
-source "$(BSP_TOP)drivers/bluetooth/Kconfig"
 
 # Power Management
 source "$(BSP_TOP)drivers/irqchip/Kconfig"
@@ -98,7 +91,6 @@ source "$(BSP_TOP)drivers/npu/Kconfig"
 
 # Misc
 source "$(BSP_TOP)drivers/misc/Kconfig"
-source "$(BSP_TOP)drivers/vendor_hooks/Kconfig"
 source "$(BSP_TOP)drivers/aw_trace/Kconfig"
 
 # Debugging
@@ -108,9 +100,6 @@ source "$(BSP_TOP)drivers/debug/Kconfig"
 
 # pstore
 source "$(BSP_TOP)drivers/pstore/Kconfig"
-
-# FS
-source "$(BSP_TOP)drivers/fs/Kconfig"
 
 #andes adaptor
 source "$(BSP_TOP)drivers/andes_adaptor/Kconfig"

@@ -31,11 +31,9 @@ obj-y += vfe/
 obj-y += tvd/
 obj-y += drm/
 obj-y += gpu/
-obj-y += car_reverse/
 
 # Multi-Media
 obj-y += ve/
-obj-$(CONFIG_VIDEO_RT_MEDIA) += rt-media/
 
 # Audio
 obj-y += sound/
@@ -66,13 +64,9 @@ obj-y += lradc/
 obj-y += rtp/
 obj-y += input/
 obj-y += ata/
-obj-y += smartcard/
-obj-y += wiegand/
-obj-y += dram_info/
 
 # Wireless
 obj-y += net/
-obj-y += bluetooth/
 
 # Power Management
 obj-y += irqchip/
@@ -95,7 +89,6 @@ obj-y += npu/
 
 # Misc
 obj-y += misc/
-obj-y += vendor_hooks/
 
 # Debugging
 obj-y += crashdump/
@@ -106,7 +99,6 @@ obj-y += debug/
 obj-y += pstore/
 
 # FS
-obj-y += fs/
 
 obj-y += andes_adaptor/
 
