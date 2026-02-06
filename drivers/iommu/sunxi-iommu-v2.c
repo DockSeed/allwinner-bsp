@@ -819,8 +819,7 @@ void sunxi_zap_tlb(unsigned long iova, size_t size)
 }
 
 static int sunxi_iommu_map(struct iommu_domain *domain, unsigned long iova,
-			   phys_addr_t paddr, size_t size, size_t count,
-			    int prot, gfp_t gfp, size_t *mapped)
+			   phys_addr_t paddr, size_t size, int prot, gfp_t gfp)
 {
 	struct sunxi_iommu_domain *sunxi_domain;
 	size_t iova_start, iova_end, s_iova_start;
@@ -850,7 +849,7 @@ static int sunxi_iommu_map(struct iommu_domain *domain, unsigned long iova,
 }
 
 static size_t sunxi_iommu_unmap(struct iommu_domain *domain, unsigned long iova,
-				size_t size, size_t count, struct iommu_iotlb_gather *gather)
+				size_t size, struct iommu_iotlb_gather *gather)
 {
 	struct sunxi_iommu_domain *sunxi_domain;
 	const struct sunxi_iommu_plat_data *plat_data;
@@ -889,7 +888,7 @@ static size_t sunxi_iommu_unmap(struct iommu_domain *domain, unsigned long iova,
 	return size;
 }
 
-static int sunxi_iommu_iotlb_sync_map(struct iommu_domain *domain, unsigned long iova,
+void sunxi_iommu_iotlb_sync_map(struct iommu_domain *domain, unsigned long iova,
 				size_t size)
 {
 	struct sunxi_iommu_domain *sunxi_domain =
@@ -900,7 +899,7 @@ static int sunxi_iommu_iotlb_sync_map(struct iommu_domain *domain, unsigned long
 	sunxi_zap_tlb(iova, size);
 	spin_unlock_irqrestore(&sunxi_domain->dt_lock, flags);
 
-	return 0;
+	return;
 }
 
 void sunxi_iommu_iotlb_sync(struct iommu_domain *domain,
@@ -940,9 +939,12 @@ static phys_addr_t sunxi_iommu_iova_to_phys(struct iommu_domain *domain,
 	return ret;
 }
 
-static struct iommu_domain *sunxi_iommu_domain_alloc_paging(struct device *dev)
+static struct iommu_domain *sunxi_iommu_domain_alloc(unsigned type)
 {
 	struct sunxi_iommu_domain *sunxi_domain;
+
+	if (type != IOMMU_DOMAIN_DMA && type != IOMMU_DOMAIN_UNMANAGED)
+		return NULL;
 
 	/* we just use one domain */
 	if (global_iommu_domain)
@@ -966,8 +968,13 @@ static struct iommu_domain *sunxi_iommu_domain_alloc_paging(struct device *dev)
 		goto err_sg_buffer;
 	}
 
-	sunxi_domain->domain.pgsize_bitmap = SZ_4K | 
-		SZ_16K | SZ_64K | SZ_256K | SZ_1M | SZ_4M | SZ_16M;
+#ifndef COOKIE_HANDLE_BY_CORE
+	if (type == IOMMU_DOMAIN_DMA &&
+	    iommu_get_dma_cookie(&sunxi_domain->domain)) {
+		pr_err("sunxi domain get dma cookie failed\n");
+		goto err_dma_cookie;
+	}
+#endif
 
 	sunxi_domain->domain.geometry.aperture_start = 0;
 	sunxi_domain->domain.geometry.aperture_end = (1ULL << 34) - 1;
@@ -1121,7 +1128,7 @@ err_group_alloc:
 }
 
 static int sunxi_iommu_of_xlate(struct device *dev,
-				const struct of_phandle_args *args)
+				struct of_phandle_args *args)
 {
 	struct sunxi_iommu_owner *owner = dev_iommu_priv_get(dev);
 	struct platform_device *sysmmu = of_find_device_by_node(args->np);
@@ -1727,21 +1734,23 @@ static void sunxi_iommu_get_resv_regions(struct device *dev,
 	}
 }
 
+#ifdef SEPERATE_DOMAIN_API
 static const struct iommu_domain_ops sunxi_iommu_domain_ops = {
 	.attach_dev = sunxi_iommu_attach_dev,
 #ifndef DETACH_OP_DEPRECATED
 	.detach_dev	= sunxi_iommu_detach_dev,
 #endif
-	.map_pages = sunxi_iommu_map,
-	.unmap_pages = sunxi_iommu_unmap,
+	.map = sunxi_iommu_map,
+	.unmap = sunxi_iommu_unmap,
 	.iotlb_sync_map = sunxi_iommu_iotlb_sync_map,
 	.iova_to_phys = sunxi_iommu_iova_to_phys,
 	.iotlb_sync = sunxi_iommu_iotlb_sync,
 	.free = sunxi_iommu_domain_free,
 };
-
 static const struct iommu_ops sunxi_iommu_ops = {
-	.domain_alloc_paging = sunxi_iommu_domain_alloc_paging,
+	.pgsize_bitmap = SZ_4K | SZ_16K | SZ_64K | SZ_256K | SZ_1M | SZ_4M |
+			 SZ_16M,
+	.domain_alloc = sunxi_iommu_domain_alloc,
 	.probe_device = sunxi_iommu_probe_device,
 	.probe_finalize = sunxi_iommu_probe_device_finalize,
 	.release_device = sunxi_iommu_release_device,
@@ -1751,6 +1760,31 @@ static const struct iommu_ops sunxi_iommu_ops = {
 	.owner = THIS_MODULE,
 	.get_resv_regions = sunxi_iommu_get_resv_regions,
 };
+
+#else
+static const struct iommu_ops sunxi_iommu_ops = {
+	.pgsize_bitmap = SZ_4K | SZ_16K | SZ_64K | SZ_256K | SZ_1M | SZ_4M |
+			 SZ_16M,
+	.map = sunxi_iommu_map,
+	.unmap = sunxi_iommu_unmap,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+	.iotlb_sync_map = sunxi_iommu_iotlb_sync_map,
+#endif
+	.iotlb_sync = sunxi_iommu_iotlb_sync,
+	.domain_alloc = sunxi_iommu_domain_alloc,
+	.domain_free = sunxi_iommu_domain_free,
+	.attach_dev = sunxi_iommu_attach_dev,
+	.detach_dev = sunxi_iommu_detach_dev,
+	.probe_device = sunxi_iommu_probe_device,
+	.probe_finalize = sunxi_iommu_probe_device_finalize,
+	.release_device = sunxi_iommu_release_device,
+	.device_group = sunxi_iommu_device_group,
+	.of_xlate = sunxi_iommu_of_xlate,
+	.iova_to_phys = sunxi_iommu_iova_to_phys,
+	.owner = THIS_MODULE,
+	.get_resv_regions = sunxi_iommu_get_resv_regions,
+};
+#endif
 
 static int __init_plat_data_from_ofnode(struct sunxi_iommu_plat_data *data,
 					struct device_node *node)
@@ -2080,8 +2114,13 @@ static int sunxi_iommu_probe(struct platform_device *pdev)
 		goto err_plat;
 	}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 	ret = iommu_device_register(&sunxi_iommu->iommu, &sunxi_iommu_ops, dev);
-	
+#else
+	iommu_device_set_ops(&sunxi_iommu->iommu, &sunxi_iommu_ops);
+	iommu_device_set_fwnode(&sunxi_iommu->iommu, dev->fwnode);
+	ret = iommu_device_register(&sunxi_iommu->iommu);
+#endif
 	if (ret) {
 		dev_err(dev, "Failed to register iommu\n");
 		goto err_plat;
@@ -2125,7 +2164,7 @@ err_res:
 	return ret;
 }
 
-static void sunxi_iommu_remove(struct platform_device *pdev)
+static int sunxi_iommu_remove(struct platform_device *pdev)
 {
 	struct sunxi_iommu_dev *sunxi_iommu = platform_get_drvdata(pdev);
 	struct iommu_resv_region *entry, *next;
@@ -2149,6 +2188,8 @@ static void sunxi_iommu_remove(struct platform_device *pdev)
 	iommu_device_sysfs_remove(&sunxi_iommu->iommu);
 	iommu_device_unregister(&sunxi_iommu->iommu);
 	global_iommu_dev = NULL;
+
+	return 0;
 }
 
 static int sunxi_iommu_suspend(struct device *dev)
