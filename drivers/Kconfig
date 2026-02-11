@@ -15,7 +15,6 @@ source "$(BSP_TOP)drivers/bus/Kconfig"
 source "$(BSP_TOP)drivers/dumpreg/Kconfig"
 source "$(BSP_TOP)drivers/watchdog/Kconfig"
 source "$(BSP_TOP)drivers/iommu/Kconfig"
-source "$(BSP_TOP)drivers/mbus/Kconfig"
 
 # Storage
 source "$(BSP_TOP)drivers/mmc/Kconfig"
@@ -30,9 +29,7 @@ source "$(BSP_TOP)drivers/g2d/Kconfig"
 source "$(BSP_TOP)drivers/di/Kconfig"
 source "$(BSP_TOP)drivers/vin/Kconfig"
 source "$(BSP_TOP)drivers/vfe/Kconfig"
-source "$(BSP_TOP)drivers/tvd/Kconfig"
 source "$(BSP_TOP)drivers/drm/Kconfig"
-source "$(BSP_TOP)drivers/gpu/Kconfig"
 
 # Multi-Media
 source "$(BSP_TOP)drivers/ve/Kconfig"
@@ -44,7 +41,6 @@ source "$(BSP_TOP)drivers/sound/Kconfig"
 source "$(BSP_TOP)drivers/ce/Kconfig"
 source "$(BSP_TOP)drivers/smc/Kconfig"
 source "$(BSP_TOP)drivers/sid/Kconfig"
-source "$(BSP_TOP)drivers/secure_storage/Kconfig"
 source "$(BSP_TOP)drivers/drm_heap/Kconfig"
 
 # I/O Connectivity
@@ -59,13 +55,8 @@ source "$(BSP_TOP)drivers/spi/Kconfig"
 source "$(BSP_TOP)drivers/spi-ng/Kconfig"
 source "$(BSP_TOP)drivers/ledc/Kconfig"
 source "$(BSP_TOP)drivers/pwm/Kconfig"
-source "$(BSP_TOP)drivers/ir-tx/Kconfig"
-source "$(BSP_TOP)drivers/ir-rx/Kconfig"
 source "$(BSP_TOP)drivers/gpadc/Kconfig"
-source "$(BSP_TOP)drivers/lradc/Kconfig"
-source "$(BSP_TOP)drivers/rtp/Kconfig"
 source "$(BSP_TOP)drivers/input/Kconfig"
-source "$(BSP_TOP)drivers/ata/Kconfig"
 
 # Wireless
 source "$(BSP_TOP)drivers/net/Kconfig"
@@ -79,14 +70,8 @@ source "$(BSP_TOP)drivers/pm_domain/Kconfig"
 source "$(BSP_TOP)drivers/power/Kconfig"
 source "$(BSP_TOP)drivers/cpufreq/Kconfig"
 source "$(BSP_TOP)drivers/devfreq/Kconfig"
-source "$(BSP_TOP)drivers/dsufreq/Kconfig"
 
 # AMP/XPU
-source "$(BSP_TOP)drivers/msgbox/Kconfig"
-source "$(BSP_TOP)drivers/hwspinlock/Kconfig"
-source "$(BSP_TOP)drivers/remoteproc/Kconfig"
-source "$(BSP_TOP)drivers/rpmsg/Kconfig"
-source "$(BSP_TOP)drivers/rpbuf/Kconfig"
 source "$(BSP_TOP)drivers/npu/Kconfig"
 
 # Misc
@@ -94,17 +79,6 @@ source "$(BSP_TOP)drivers/misc/Kconfig"
 source "$(BSP_TOP)drivers/aw_trace/Kconfig"
 
 # Debugging
-source "$(BSP_TOP)drivers/crashdump/Kconfig"
-source "$(BSP_TOP)drivers/jtag/Kconfig"
 source "$(BSP_TOP)drivers/debug/Kconfig"
-
-# pstore
-source "$(BSP_TOP)drivers/pstore/Kconfig"
-
-#andes adaptor
-source "$(BSP_TOP)drivers/andes_adaptor/Kconfig"
-
-#awlink
-source "$(BSP_TOP)drivers/awlink/Kconfig"
 
 endmenu
