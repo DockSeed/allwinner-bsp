@@ -25,7 +25,6 @@ source "$(BSP_TOP)drivers/redeposit/Kconfig"
 
 # Graphics
 source "$(BSP_TOP)drivers/video/Kconfig"
-source "$(BSP_TOP)drivers/g2d/Kconfig"
 source "$(BSP_TOP)drivers/di/Kconfig"
 source "$(BSP_TOP)drivers/vin/Kconfig"
 source "$(BSP_TOP)drivers/vfe/Kconfig"
@@ -46,7 +45,6 @@ source "$(BSP_TOP)drivers/drm_heap/Kconfig"
 # I/O Connectivity
 source "$(BSP_TOP)drivers/pcie/Kconfig"
 source "$(BSP_TOP)drivers/phy/Kconfig"
-source "$(BSP_TOP)drivers/emac/Kconfig"
 source "$(BSP_TOP)drivers/gmac/Kconfig"
 source "$(BSP_TOP)drivers/stmmac/Kconfig"
 source "$(BSP_TOP)drivers/usb/Kconfig"
@@ -76,9 +74,4 @@ source "$(BSP_TOP)drivers/npu/Kconfig"
 
 # Misc
 source "$(BSP_TOP)drivers/misc/Kconfig"
-source "$(BSP_TOP)drivers/aw_trace/Kconfig"
-
-# Debugging
-source "$(BSP_TOP)drivers/debug/Kconfig"
-
 endmenu

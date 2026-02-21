@@ -13,7 +13,6 @@ obj-y += bus/
 obj-y += dumpreg/
 obj-y += watchdog/
 obj-y += iommu/
-obj-y += aw_trace/
 
 # Storage
 obj-y += mmc/
@@ -23,7 +22,6 @@ obj-y += redeposit/
 
 # Graphics
 obj-y += video/
-obj-y += g2d/
 obj-y += di/
 obj-y += vin/
 obj-y += vfe/
@@ -44,7 +42,6 @@ obj-y += drm_heap/
 # I/O Connectivity
 obj-y += pcie/
 obj-y += phy/
-obj-y += emac/
 obj-y += gmac/
 obj-y += stmmac/
 obj-y += usb/
@@ -74,7 +71,3 @@ obj-y += npu/
 
 # Misc
 obj-y += misc/
-
-# Debugging
-obj-y += debug/
-
