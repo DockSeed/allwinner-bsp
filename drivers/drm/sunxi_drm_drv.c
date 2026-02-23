@@ -40,7 +40,6 @@
 
 #define DRIVER_NAME "sunxi-drm"
 #define DRIVER_DESC "allwinnertech SoC DRM"
-#define DRIVER_DATE "20230901"
 #define DRIVER_MAJOR 3
 #define DRIVER_MINOR 0
 
@@ -111,14 +110,6 @@ static const struct drm_framebuffer_funcs sunxi_drm_gem_fb_funcs = {
 	.create_handle = drm_gem_fb_create_handle,
 };
 
-struct drm_framebuffer *
-sunxi_drm_gem_fb_create(struct drm_device *dev, struct drm_file *file,
-			const struct drm_mode_fb_cmd2 *mode_cmd)
-{
-	return drm_gem_fb_create_with_funcs(dev, file, mode_cmd,
-					    &sunxi_drm_gem_fb_funcs);
-}
-
 static int sunxi_drm_atomic_helper_commit(struct drm_device *dev,
 			     struct drm_atomic_state *state,
 			     bool nonblock)
@@ -180,7 +171,7 @@ static const struct drm_mode_config_funcs sunxi_drm_mode_config_funcs = {
 	.atomic_check = drm_atomic_helper_check,
 	.atomic_commit = sunxi_drm_atomic_helper_commit,
 	/* .output_poll_changed = drm_fb_helper_output_poll_changed, */
-	.fb_create = sunxi_drm_gem_fb_create,
+	.fb_create = drm_gem_fb_create,
 };
 
 static void sunxi_drm_atomic_helper_commit_tail(struct drm_atomic_state *old_state)
@@ -422,7 +413,6 @@ static struct drm_driver sunxi_drm_driver = {
 	.num_ioctls         = ARRAY_SIZE(sunxi_drm_ioctls),
 	.name = DRIVER_NAME,
 	.desc = DRIVER_DESC,
-	.date = DRIVER_DATE,
 	.major = DRIVER_MAJOR,
 	.minor = DRIVER_MINOR,
 	.gem_create_object = sunxi_gem_create_object,
@@ -1342,10 +1332,9 @@ static int sunxi_drm_platform_probe(struct platform_device *pdev)
 					       match);
 }
 
-static int sunxi_drm_platform_remove(struct platform_device *pdev)
+static void sunxi_drm_platform_remove(struct platform_device *pdev)
 {
 	component_master_del(&pdev->dev, &sunxi_drm_ops);
-	return 0;
 }
 
 #if IS_ENABLED(CONFIG_PM_SLEEP)
@@ -1439,7 +1428,7 @@ static void __exit sunxi_drm_drv_exit(void)
 module_init(sunxi_drm_drv_init);
 module_exit(sunxi_drm_drv_exit);
 
-MODULE_IMPORT_NS(DMA_BUF);
+MODULE_IMPORT_NS("DMA_BUF");
 MODULE_DESCRIPTION("Allwinnertech SoC DRM Driver");
 MODULE_LICENSE("GPL");
 MODULE_VERSION("V1.1.6");

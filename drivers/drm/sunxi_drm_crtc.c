@@ -36,6 +36,7 @@
 #include "sunxi_drm_drv.h"
 #include "sunxi_drm_trace.h"
 #include "sunxi_drm_debug.h"
+#include "sunxi_device/hardware/lowlevel_de/sunxi_de.h"
 #include "sunxi_device/hardware/lowlevel_de/de_base.h"
 
 #define WB_SIGNAL_MAX		2
@@ -664,28 +665,18 @@ static int __maybe_unused sunxi_plane_atomic_precheck(struct drm_plane *plane,
 	return 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-static int sunxi_plane_atomic_async_check(struct drm_plane *plane,
-				      struct drm_plane_state *new_state)
-#else
 
 static int sunxi_plane_atomic_async_check(struct drm_plane *plane,
-					struct drm_atomic_state *state)
-#endif
+					struct drm_atomic_state *state, bool flip)
 {
 	return 0;
 }
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-static void sunxi_plane_atomic_async_update(struct drm_plane *plane,
-				      struct drm_plane_state *new_state)
-{
-#else
+
 static void sunxi_plane_atomic_async_update(struct drm_plane *plane,
 					  struct drm_atomic_state *state)
 {
 	struct drm_plane_state *new_state = drm_atomic_get_new_plane_state(state,
 									   plane);
-#endif
 	struct display_channel_state *cstate = to_display_channel_state(new_state);
 	struct display_channel_state *old_cstate = to_display_channel_state(plane->state);
 	struct sunxi_drm_crtc *scrtc = to_sunxi_crtc(new_state->crtc);

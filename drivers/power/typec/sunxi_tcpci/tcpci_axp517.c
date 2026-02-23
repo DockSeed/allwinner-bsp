@@ -53,7 +53,7 @@ static bool axp517_tcpc_get_psy(struct axp517_tcpci_chip *chip)
 		return true;
 
 	if (of_find_property(chip->dev->of_node, "det_usb_supply", NULL)) {
-		chip->usb_psy = devm_power_supply_get_by_phandle(chip->dev, "det_usb_supply");
+		chip->usb_psy = devm_power_supply_get_by_reference(chip->dev, "det_usb_supply");
 		if (!IS_ERR_OR_NULL(chip->usb_psy))
 			return true;
 	}

@@ -12,12 +12,8 @@
 #include <linux/version.h>
 #include <linux/math64.h>
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 19, 0)
-#include <drm/drm_scdc_helper.h>
-#else
 #include <drm/display/drm_hdmi_helper.h>
 #include <drm/display/drm_scdc_helper.h>
-#endif
 
 #include "dw_dev.h"
 #include "dw_mc.h"

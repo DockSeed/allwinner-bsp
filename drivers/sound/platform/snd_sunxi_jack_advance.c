@@ -548,9 +548,8 @@ int snd_sunxi_jack_adv_init(void *jack_data)
 	if (jack_sdbp->jack_sdbp_method == SDBP_SCAN) {
 		spin_lock_init(&jack_sdbp->sdbp_lock);
 		INIT_WORK(&jack_sdbp->sdbp_scan_work, sunxi_jack_sdbp_scan_work);
-		hrtimer_init(&jack_sdbp->sdbp_scan_hrt.timer, CLOCK_MONOTONIC,
-			     HRTIMER_MODE_REL);
-		jack_sdbp->sdbp_scan_hrt.timer.function = sunxi_jack_sdbp_scan_handler;
+		hrtimer_setup(&jack_sdbp->sdbp_scan_hrt.timer, sunxi_jack_sdbp_scan_handler,
+			CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	}
 
 	np = jack_adv->dev->of_node;

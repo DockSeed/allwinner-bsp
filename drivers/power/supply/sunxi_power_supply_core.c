@@ -184,7 +184,7 @@ int sunxi_power_supply_init_dt_supply(struct device *dev, struct device_node *of
 		return 0;
 	}
 
-	psy = devm_power_supply_get_by_phandle(dev, phandle_name);
+	psy = devm_power_supply_get_by_reference(dev, phandle_name);
 	if (IS_ERR_OR_NULL(psy)) {
 		PMIC_ERR("%s supply is not ready\n", phandle_name);
 		return -EPROBE_DEFER;

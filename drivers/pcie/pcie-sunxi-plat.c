@@ -1254,11 +1254,7 @@ static struct platform_driver sunxi_pcie_plat_driver = {
 		.pm = &sunxi_pcie_plat_pm_ops,
 	},
 	.probe  = sunxi_pcie_plat_probe,
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
 	.remove = sunxi_pcie_plat_remove,
-#else
-	.remove_new = sunxi_pcie_plat_remove,
-#endif
 };
 
 module_platform_driver(sunxi_pcie_plat_driver);

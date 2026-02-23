@@ -71,7 +71,7 @@ sunxi_drm_create_attach_property_bitmask(struct drm_device *drm,
 	return prop;
 }
 
-int drm_mode_to_sunxi_video_timings(struct drm_display_mode *mode,
+int drm_mode_to_sunxi_video_timings(const struct drm_display_mode *mode,
 				    struct disp_video_timings *timings)
 {
 	if (!mode) {

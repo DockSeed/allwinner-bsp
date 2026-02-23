@@ -13,11 +13,7 @@
 
 #define EDID_BLOCK_SIZE		    (128)
 
-void dw_edid_reset_sink(void);
-
 int dw_edid_read_extenal_block(int block, u8 *edid_buf);
-
-int dw_edid_parse_info(u8 *data);
 
 int dw_sink_support_hdmi20(void);
 

@@ -173,7 +173,7 @@ static int axp8191_temp_ctrl_probe(struct platform_device *pdev)
 	struct device_node *node = pdev->dev.of_node;
 
 	if (!of_device_is_available(node)) {
-		PMIC_ERR("axp8191-temp-ctrl device is not configed\n");
+		PMIC_INFO("axp8191-temp-ctrl device is not configured\n");
 		return -ENODEV;
 	}
 
@@ -242,12 +242,12 @@ err:
 	return ret;
 }
 
-static int axp8191_temp_ctrl_remove(struct platform_device *pdev)
+static void axp8191_temp_ctrl_remove(struct platform_device *pdev)
 {
 	PMIC_DEV_DEBUG(&pdev->dev, "==============AXP8191 unegister==============\n");
 	PMIC_DEV_DEBUG(&pdev->dev, "axp8191 teardown temp_ctrl dev\n");
 
-	return 0;
+	return;
 }
 
 static inline void axp8191_temp_ctrl_irq_set(unsigned int irq, bool enable)

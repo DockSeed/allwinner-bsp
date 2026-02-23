@@ -26,6 +26,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
+#include <linux/platform_device.h>
 #include <sunxi-sip.h>
 
 #define DRIVER_NAME	"DDR-Clock-Driver"
@@ -252,7 +253,7 @@ static int ddr_clock_probe(struct platform_device *pdev)
 		}
 	}
 
-	sunxi_err(NULL, "dram_clk:%d\n", ddrclk->dram_clk);
+	sunxi_info(NULL, "dram_clk:%d\n", ddrclk->dram_clk);
 
 	ret = of_property_read_u32(dram_np, "dram_para[24]", &ddrclk->dram_div);
 	if (ret) {
@@ -263,7 +264,7 @@ static int ddr_clock_probe(struct platform_device *pdev)
 		}
 	}
 
-	sunxi_err(NULL, "dram_div:0x%x\n", ddrclk->dram_div);
+	sunxi_info(NULL, "dram_div:0x%x\n", ddrclk->dram_div);
 
 	ddrclk->ccmu_base = of_iomap(np, 0);
 	if (!ddrclk->ccmu_base) {
@@ -308,12 +309,11 @@ out:
 	return ret;
 }
 
-static int ddr_clock_remove(struct platform_device *pdev)
+static void ddr_clock_remove(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
 
 	of_clk_del_provider(np);
-	return 0;
 }
 
 static struct platform_driver ddr_clock_driver = {

@@ -85,7 +85,7 @@ static struct addr_mgt_info info[] = {
 	{TYPE_ANY, TYPE_ANY, 1, NULL, "eth" },
 };
 
-extern int hmac_sha256(const uint8_t *plaintext, ssize_t psize, uint8_t *output);
+extern int aw_hmac_sha256(const uint8_t *plaintext, ssize_t psize, uint8_t *output);
 
 #if IS_ENABLED(CONFIG_AW_SID)
 #include <sunxi-sid.h>
@@ -244,7 +244,7 @@ static int addr_factory(struct device_node *np,
 				initial = 0;
 				return -1;
 			}
-			if (hmac_sha256(id, ID_LEN, hash)) {
+			if (aw_hmac_sha256(id, ID_LEN, hash)) {
 				initial = 0;
 				return -1;
 			}
@@ -375,10 +375,9 @@ static int addr_mgt_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int addr_mgt_remove(struct platform_device *pdev)
+static void addr_mgt_remove(struct platform_device *pdev)
 {
 	class_unregister(&addr_class);
-	return 0;
 }
 
 static struct platform_driver addr_mgt_driver = {

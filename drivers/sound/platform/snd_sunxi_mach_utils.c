@@ -331,16 +331,16 @@ static unsigned int asoc_simple_parse_daifmt_raw(struct device_node *np, const c
 
 	switch ((bit << 4) + frame) {
 	case 0x11:
-		format |= SND_SOC_DAIFMT_CBM_CFM;
+		format |= SND_SOC_DAIFMT_CBP_CFP;
 		break;
 	case 0x10:
-		format |= SND_SOC_DAIFMT_CBM_CFS;
+		format |= SND_SOC_DAIFMT_CBP_CFC;
 		break;
 	case 0x01:
-		format |= SND_SOC_DAIFMT_CBS_CFM;
+		format |= SND_SOC_DAIFMT_CBC_CFP;
 		break;
 	default:
-		format |= SND_SOC_DAIFMT_CBS_CFS;
+		format |= SND_SOC_DAIFMT_CBC_CFC;
 		break;
 	}
 
@@ -412,10 +412,10 @@ int asoc_simple_parse_daifmt(struct device_node *node,
 	} else {
 		if (codec == bitclkmaster)
 			daifmt |= (codec == framemaster) ?
-				SND_SOC_DAIFMT_CBM_CFM : SND_SOC_DAIFMT_CBM_CFS;
+				SND_SOC_DAIFMT_CBP_CFP : SND_SOC_DAIFMT_CBP_CFC;
 		else
 			daifmt |= (codec == framemaster) ?
-				SND_SOC_DAIFMT_CBS_CFM : SND_SOC_DAIFMT_CBS_CFS;
+				SND_SOC_DAIFMT_CBC_CFP : SND_SOC_DAIFMT_CBC_CFC;
 	}
 
 	of_node_put(bitclkmaster);

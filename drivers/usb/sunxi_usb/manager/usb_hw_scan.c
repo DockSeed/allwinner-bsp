@@ -34,7 +34,7 @@
 #include <asm/byteorder.h>
 #include <asm/io.h>
 #include <asm/irq.h>
-#include <asm/unaligned.h>
+#include <linux/unaligned.h>
 #include <linux/gpio.h>
 #include  "../include/sunxi_usb_config.h"
 #include  "usb_manager.h"
@@ -246,7 +246,7 @@ static u32 get_detect_vbus_state(struct usb_scan_info *info)
 				if (!psy) {
 					if (of_find_property(info->cfg->pdev->dev.of_node,
 								"det_vbus_supply", NULL))
-						psy = devm_power_supply_get_by_phandle(&info->cfg->pdev->dev,
+						psy = devm_power_supply_get_by_reference(&info->cfg->pdev->dev,
 								"det_vbus_supply");
 
 					if (!psy || IS_ERR(psy)) {
@@ -279,7 +279,7 @@ get_property:
 			if (!psy) {
 				if (of_find_property(info->cfg->pdev->dev.of_node,
 							"det_vbus_supply", NULL))
-					psy = devm_power_supply_get_by_phandle(&info->cfg->pdev->dev,
+					psy = devm_power_supply_get_by_reference(&info->cfg->pdev->dev,
 							"det_vbus_supply");
 
 				if (!psy || IS_ERR(psy)) {

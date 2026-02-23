@@ -137,7 +137,7 @@ static void clear_alarm_regs(u8 timer)
 }
 
 static ssize_t
-interval_show(struct class *class, struct class_attribute *attr, char *buf)
+interval_show(const struct class *class, const struct class_attribute *attr, char *buf)
 {
 	unsigned long long value = 0;
 
@@ -146,7 +146,7 @@ interval_show(struct class *class, struct class_attribute *attr, char *buf)
 }
 
 static ssize_t
-interval_store(struct class *class, struct class_attribute *attr,
+interval_store(const struct class *class, const struct class_attribute *attr,
 	   const char *buf, size_t count)
 {
 	int err = 0;
@@ -168,7 +168,6 @@ static struct class_attribute timer_alarm_attrs[] = {
 
 static struct class timer_alarm_class = {
 	.name = "timer_alarm",
-	.owner = THIS_MODULE,
 };
 
 static irqreturn_t alarm_interrupt(int irq, void *dev_id)
@@ -263,7 +262,7 @@ static int alarm_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int alarm_remove (struct platform_device *pdev)
+static void alarm_remove (struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	int i;
@@ -277,8 +276,6 @@ static int alarm_remove (struct platform_device *pdev)
 	for (i = 0; i < ARRAY_SIZE(timer_alarm_attrs); i++)
 		class_remove_file(&timer_alarm_class, &timer_alarm_attrs[i]);
 	class_unregister(&timer_alarm_class);
-
-	return 0;
 }
 
 int sunxi_alarm_suspend(struct device *dev)

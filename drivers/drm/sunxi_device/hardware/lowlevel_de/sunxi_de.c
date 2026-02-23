@@ -10,6 +10,7 @@
  * option) any later version.
  */
 #include <linux/version.h>
+#include <linux/of_platform.h>
 #include <linux/of_device.h>
 #include <linux/hrtimer.h>
 #include <linux/dma-mapping.h>
@@ -409,22 +410,6 @@ static int wb_rcq_head_switch(struct sunxi_de_out *hwde)
 	return -1;
 }
 
-//TODO
-/*static*/ int de_rtmx_exit_rcq(struct sunxi_display_engine *de)
-{
-/*
-	struct de_rtmx_context *ctx = de_rtmx_get_context(disp);
-	struct de_rcq_mem_info *rcq_info = &ctx->rcq_info;
-
-	if (rcq_info->reg_blk)
-		kfree(rcq_info->reg_blk);
-	if (rcq_info->vir_addr)
-		de_top_reg_memory_free(rcq_info->vir_addr, rcq_info->phy_addr,
-			rcq_info->block_num_aligned * sizeof(*(rcq_info->vir_addr)));
-*/
-	return 0;
-}
-
 static int de_rtmx_set_all_reg_dirty(struct sunxi_de_out *hwde, u32 dirty)
 {
 	struct de_rcq_mem_info *rcq_info = &hwde->rcq_info;
@@ -528,14 +513,6 @@ void *sunxi_de_reg_buffer_alloc(struct sunxi_display_engine *de, u32 size, dma_a
 	return (void *)virt;
 }
 
-void sunxi_de_reg_buffer_free(struct sunxi_display_engine *de,
-	void *virt_addr, void *phys_addr, u32 num_bytes)
-{
-	if (de->match_data->update_mode != RCQ_MODE) {
-		kfree(virt_addr);
-	}
-}
-
 static int sunxi_de_reg_mem_init(struct sunxi_display_engine *de)
 {
 	if (de->match_data->update_mode == RCQ_MODE) {
@@ -546,7 +523,7 @@ static int sunxi_de_reg_mem_init(struct sunxi_display_engine *de)
 	return 0;
 }
 
-void sunxi_de_reg_mem_deinit(struct sunxi_display_engine *de)
+static void sunxi_de_reg_mem_deinit(struct sunxi_display_engine *de)
 {
 	if (de->match_data->update_mode == RCQ_MODE && de->reg.virt_addr) {
 		dma_free_coherent(de->dev, DE_BLOCK_SIZE, (void *)(de->reg.virt_addr - de->reg.used_byte),
@@ -1488,7 +1465,7 @@ static void sunxi_de_devfreq_exit(struct device *dev)
 	devm_kfree(dev, sunxi_defreq_userspace_profile.freq_table);
 }
 
-int sunxi_deauto_governor_event_handler(struct devfreq *devfreq, unsigned int event, void *data)
+static int sunxi_deauto_governor_event_handler(struct devfreq *devfreq, unsigned int event, void *data)
 {
 	struct sunxi_display_engine *engine = dev_get_drvdata(devfreq->dev.parent);
 	switch (event) {
@@ -1544,8 +1521,7 @@ static int sunxi_de_probe(struct platform_device *pdev)
 		display_out = &engine->display_out[i];
 		display_out->id = i;
 		display_out->dev = &pdev->dev;
-		hrtimer_init(&display_out->rcq_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-		display_out->rcq_timer.function = timer_handler_rcq_update;
+		hrtimer_setup(&display_out->rcq_timer, timer_handler_rcq_update, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 		display_out->port = of_graph_get_port_by_id(pdev->dev.of_node, i);
 		if (of_property_read_u32(display_out->port, "reg", &display_out->port_id))
 			DRM_INFO("[SUNXI-DE] port reg not found\n");
@@ -1636,7 +1612,7 @@ OUT:
 	return ret;
 }
 
-static int sunxi_de_remove(struct platform_device *pdev)
+static void sunxi_de_remove(struct platform_device *pdev)
 {
 	struct sunxi_display_engine *engine;
 	engine = dev_get_drvdata(&pdev->dev);
@@ -1645,7 +1621,6 @@ static int sunxi_de_remove(struct platform_device *pdev)
 	component_del(&pdev->dev, &sunxi_de_component_ops);
 	sunxi_de_reg_mem_deinit(engine);
 	sunxi_display_engine_exit(&pdev->dev);
-	return 0;
 }
 
 static const struct de_match_data de350_data = {

@@ -330,7 +330,7 @@ static int axp2202_acin_probe(struct platform_device *pdev)
 	/* parse device tree and set register */
 	axp2202_acin_parse_device_tree(acin_power);
 
-	psy_cfg.of_node = pdev->dev.of_node;
+	psy_cfg.fwnode = dev_fwnode(&pdev->dev);
 	psy_cfg.drv_data = acin_power;
 
 	acin_power->acin_supply = devm_power_supply_register(acin_power->dev,

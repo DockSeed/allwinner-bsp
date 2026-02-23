@@ -744,53 +744,6 @@ static int _parse_cta_data_block(u8 *data, struct sink_info_s *sink)
 	return length + 1;
 }
 
-static int _edid_parser_block_base(struct edid *edid, struct sink_info_s *sink)
-{
-	int i;
-	dw_dtd_t tmpDtd;
-	struct detailed_timing    *desc = NULL;
-	struct detailed_non_pixel *data = NULL;
-
-	if (edid->header[0] != 0) {
-		hdmi_err("edid base block is unvalid!!!\n");
-		return -1;
-	}
-
-	/* base info */
-	sink->mfg_week = edid->mfg_week;
-	sink->mfg_year = edid->mfg_year;
-
-	hdmi_trace("dw edid parse block0 detailed timing:\n");
-	for (i = 0; i < 4; i++) {
-		desc = &edid->detailed_timings[i];
-		if (desc->pixel_clock == 0) {
-			data = &desc->data.other_data;
-			switch (data->type) {
-			case EDID_DETAIL_MONITOR_NAME:
-				memset(sink->prod_name, 0x0, sizeof(sink->prod_name));
-				memcpy(sink->prod_name, data->data.str.str,
-					ARRAY_SIZE(data->data.str.str));
-				break;
-			default:
-				hdmi_inf("dw edid unsupport parser desc type: %d\n", data->type);
-				break;
-			}
-			continue;
-		}
-
-		if (_parse_data_block_detailed_timing(&tmpDtd, (u8 *)desc) != true) {
-			hdmi_inf("dw edid base block desc timing %d parser failed\n", i);
-			continue;
-		}
-		hdmi_trace(" - [dtd %d] pixel clock: %dKHz, %dx%d%s\n",
-			sink->edid_mDtdIndex, (tmpDtd.mPixelClock / 100),
-			tmpDtd.mHActive, tmpDtd.mVActive, tmpDtd.mInterlaced ? "I" : "P");
-		sink->edid_mDtd[sink->edid_mDtdIndex] = tmpDtd;
-		sink->edid_mDtdIndex++;
-	}
-	return 0;
-}
-
 static int _edid_parser_block_cta_861(u8 *buffer, struct sink_info_s *sink)
 {
 	int i = 0;
@@ -828,68 +781,6 @@ static int _edid_parser_block_cta_861(u8 *buffer, struct sink_info_s *sink)
 		}
 	}
 	return 0;
-}
-
-void dw_edid_reset_sink(void)
-{
-	struct sink_info_s *sink = dw_get_sink();
-	u8 i = 0;
-
-	if (IS_ERR_OR_NULL(sink)) {
-		shdmi_err(sink);
-		return;
-	}
-
-	_dw_edid_update_sink_hdmi20(false);
-
-	for (i = 0; i < sizeof(sink->prod_name); i++)
-		sink->prod_name[i] = 0;
-
-	sink->edid_mBasicAudioSupport = false;
-	sink->edid_mUnderscanSupport  = false;
-	sink->edid_mYcc422Support = false;
-	sink->edid_mYcc444Support = false;
-	sink->edid_mYcc420Support = false;
-	sink->edid_mDtdIndex = 0;
-	sink->edid_mSadIndex = 0;
-	sink->edid_mSvdIndex = 0;
-
-	_reset_sink_hdmi14(&sink->edid_mHdmivsdb);
-	_reset_sink_hdmi_forum(&sink->edid_mHdmiForumvsdb);
-	_reset_sink_monitor_desc(&sink->edid_mMonitorRangeLimits);
-	_reset_sink_video_capabilit(&sink->edid_mVideoCapabilityDataBlock);
-	_reset_sink_colorimetry(&sink->edid_mColorimetryDataBlock);
-	_reset_sink_hdr_static_metadata(&sink->edid_hdr_static_metadata_data_block);
-	_reset_sink_speaker_alloction(&sink->edid_mSpeakerAllocationDataBlock);
-}
-
-int dw_edid_parse_info(u8 *data)
-{
-	struct sink_info_s *sink = dw_get_sink();
-	int ret = -1;
-
-	if (IS_ERR_OR_NULL(sink)) {
-		shdmi_err(sink);
-		goto parse_exit;
-	}
-
-	switch (data[0]) {
-	case TAG_BASE_BLOCK:
-		ret = _edid_parser_block_base((struct edid *)data, sink);
-		goto parse_exit;
-	case TAG_CEA_EXT:
-		ret = _edid_parser_block_cta_861(data, sink);
-		goto parse_exit;
-	case TAG_VTB_EXT:
-	case TAG_DI_EXT:
-	case TAG_LS_EXT:
-	case TAG_MI_EXT:
-	default:
-		hdmi_inf("edid block header 0x%02x not supported\n", data[0]);
-	}
-
-parse_exit:
-	return ret;
 }
 
 int dw_edid_exit(void)

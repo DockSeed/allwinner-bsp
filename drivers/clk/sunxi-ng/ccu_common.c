@@ -15,6 +15,7 @@
 #include <linux/clkdev.h>
 #include <linux/delay.h>
 #include <sunxi-autogen.h>
+#include <sunxi-clk.h>
 #include "ccu_common.h"
 #include "ccu_gate.h"
 #include "ccu_reset.h"

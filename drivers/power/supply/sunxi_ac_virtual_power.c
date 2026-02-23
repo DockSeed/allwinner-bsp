@@ -59,7 +59,7 @@ static int sunxi_virtual_ac_power_probe(struct platform_device *pdev)
 	ac_power->name = "sunxi-ac-power";
 	ac_power->dev = &pdev->dev;
 
-	psy_cfg.of_node = pdev->dev.of_node;
+	psy_cfg.fwnode = dev_fwnode(&pdev->dev);
 	psy_cfg.drv_data = ac_power;
 
 	platform_set_drvdata(pdev, ac_power);

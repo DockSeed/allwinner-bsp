@@ -638,7 +638,6 @@ static const struct file_operations googlevp9dev_fops = {
 	.mmap    = googlevp9dev_mmap,
 	.open    = googlevp9dev_open,
 	.release = googlevp9dev_release,
-	.llseek  = no_llseek,
 	.unlocked_ioctl   = compat_googlevp9dev_ioctl,
 	.compat_ioctl     = compat_googlevp9dev_ioctl,
 

@@ -92,7 +92,7 @@ static int sunxi_sc_nmi_set_type(struct irq_data *data, unsigned int flow_type)
 	unsigned int src_type;
 	unsigned int i;
 
-	irq_gc_lock(gc);
+	guard(raw_spinlock)(&gc->lock);
 
 	switch (flow_type & IRQF_TRIGGER_MASK) {
 	case IRQ_TYPE_EDGE_FALLING:
@@ -109,7 +109,6 @@ static int sunxi_sc_nmi_set_type(struct irq_data *data, unsigned int flow_type)
 		src_type = SUNXI_SRC_TYPE_LEVEL_LOW;
 		break;
 	default:
-		irq_gc_unlock(gc);
 		pr_err("Cannot assign multiple trigger modes to IRQ %d.\n",
 			data->irq);
 		return -EBADR;
@@ -126,8 +125,6 @@ static int sunxi_sc_nmi_set_type(struct irq_data *data, unsigned int flow_type)
 	src_type_reg &= ~SUNXI_NMI_SRC_TYPE_MASK;
 	src_type_reg |= src_type;
 	sunxi_sc_nmi_write(gc, ctrl_off, src_type_reg);
-
-	irq_gc_unlock(gc);
 
 	return IRQ_SET_MASK_OK;
 }
@@ -273,7 +270,7 @@ static int sunxi_irq_nmi_probe(struct platform_device *pdev)
 	return sunxi_sc_nmi_irq_init(pdev->dev.of_node, reg_offs);
 }
 
-static int sunxi_irq_nmi_remove(struct platform_device *pdev)
+static void sunxi_irq_nmi_remove(struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node;
 	struct resource res;
@@ -283,8 +280,6 @@ static int sunxi_irq_nmi_remove(struct platform_device *pdev)
 	of_address_to_resource(node, 0, &res);
 	release_mem_region(res.start, resource_size(&res));
 	irq_domain_remove(sys_gc->domain);
-
-	return 0;
 }
 
 static struct of_device_id sunxi_irq_nmi_match[] = {

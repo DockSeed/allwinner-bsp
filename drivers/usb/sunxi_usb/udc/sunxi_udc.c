@@ -38,7 +38,7 @@
 #include <asm/byteorder.h>
 #include <asm/io.h>
 #include <asm/irq.h>
-#include <asm/unaligned.h>
+#include <linux/unaligned.h>
 
 #include <linux/regulator/consumer.h>
 
@@ -102,17 +102,17 @@ static const unsigned char TestPkt[54] = {
 };
 
 /* debug */
-unsigned static int g_queue_debug;
+static unsigned int g_queue_debug;
 int g_dma_debug;
 int g_dma_ext_debug;
-unsigned static int g_write_debug;
-unsigned static int g_read_debug;
-unsigned static int g_irq_debug;
-unsigned static int g_msc_write_debug;
-unsigned static int g_msc_read_debug;
+static unsigned int g_write_debug;
+static unsigned int g_read_debug;
+static unsigned int g_irq_debug;
+static unsigned int g_msc_write_debug;
+static unsigned int g_msc_read_debug;
 
 /* config enable dma */
-unsigned static int g_dma_enable = 1;
+static unsigned int g_dma_enable = 1;
 /* usb data enabled ? */
 enum sunxi_udc_data_e g_usb_data_enabled = SW_UDC_D_ENABLE;
 
@@ -3711,7 +3711,7 @@ static void sunxi_vbus_det_work(struct work_struct *work)
 
 #if IS_ENABLED(CONFIG_POWER_SUPPLY)
 	if (of_find_property(g_udc_pdev->dev.of_node, "det_vbus_supply", NULL))
-		psy = devm_power_supply_get_by_phandle(&g_udc_pdev->dev,
+		psy = devm_power_supply_get_by_reference(&g_udc_pdev->dev,
 						     "det_vbus_supply");
 
 	if (!psy || IS_ERR(psy)) {
@@ -4048,11 +4048,7 @@ err0:
 }
 
 static ssize_t
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0))
 udc_reg_show(const struct class *class, const struct class_attribute *attr, char *buf)
-#else
-udc_reg_show(struct class *class, struct class_attribute *attr, char *buf)
-#endif
 {
 	struct resource res;
 
@@ -4213,7 +4209,7 @@ static int sunxi_udc_probe_otg(struct platform_device *pdev)
 
 }
 
-static int sunxi_udc_remove_otg(struct platform_device *pdev)
+static void sunxi_udc_remove_otg(struct platform_device *pdev)
 {
 	struct sunxi_udc *udc = NULL;
 
@@ -4249,8 +4245,6 @@ static int sunxi_udc_remove_otg(struct platform_device *pdev)
 
 	sunxi_udc_io_exit(&g_sunxi_udc_io);
 	memset(&g_sunxi_udc_io, 0, sizeof(sunxi_udc_io_t));
-
-	return 0;
 }
 
 static int sunxi_udc_probe(struct platform_device *pdev)
@@ -4258,9 +4252,9 @@ static int sunxi_udc_probe(struct platform_device *pdev)
 	return sunxi_udc_probe_otg(pdev);
 }
 
-static int sunxi_udc_remove(struct platform_device *pdev)
+static void sunxi_udc_remove(struct platform_device *pdev)
 {
-	return sunxi_udc_remove_otg(pdev);
+	sunxi_udc_remove_otg(pdev);
 }
 
 #if IS_ENABLED(CONFIG_PM)

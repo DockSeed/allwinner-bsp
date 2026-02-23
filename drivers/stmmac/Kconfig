@@ -4,8 +4,7 @@ menu "Stmmac Drivers"
 
 config AW_STMMAC_ETH
 	tristate "Allwinner STMMAC driver"
-	depends on OF && (ARCH_SUNXI || COMPILE_TEST)
-	select NETDEVICES
+	depends on OF && (ARCH_SUNXI || COMPILE_TEST) && NETDEVICES
 	select STMMAC_ETH
 	select STMMAC_PLATFORM
 	select AW_DWMAC_SUNXI

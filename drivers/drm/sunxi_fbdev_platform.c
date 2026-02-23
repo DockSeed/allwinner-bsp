@@ -10,19 +10,15 @@
  * warranty of any kind, whether express or implied.
  */
 #include <linux/version.h>
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(6, 1, 0)
-#include <drm/drm_fb_cma_helper.h>
-#include <drm/drm_gem_cma_helper.h>
-#else
+#include <linux/vmalloc.h>
+#include <linux/memblock.h>
+
 #include <drm/drm_fb_dma_helper.h>
 #include <drm/drm_gem_dma_helper.h>
-#endif
 #include <drm/drm_vblank.h>
 #include <drm/drm_client.h>
-#include <linux/memblock.h>
-#if LINUX_VERSION_CODE > KERNEL_VERSION(6, 1, 0)
 #include <drm/drm_blend.h>
-#endif
+
 #include "sunxi_fbdev.h"
 #include "sunxi_drm_crtc.h"
 #include <drm/drm_fourcc.h>
@@ -141,29 +137,6 @@ err_exit:
 	return ret;
 }
 
-void *fb_map_kernel(unsigned long phys_addr, unsigned long size)
-{
-	int npages = PAGE_ALIGN(size) / PAGE_SIZE;
-	struct page **pages = vmalloc(sizeof(struct page *) * npages);
-	struct page **tmp;
-	struct page *cur_page = phys_to_page(phys_addr);
-	pgprot_t pgprot;
-	void *vaddr = NULL;
-	int i;
-
-	if (!pages)
-		return NULL;
-
-	for (i = 0, tmp = pages; i < npages; i++)
-		*(tmp++) = cur_page++;
-
-	pgprot = pgprot_noncached(PAGE_KERNEL);
-	vaddr = vmap(pages, npages, VM_MAP, pgprot);
-
-	vfree(pages);
-	return vaddr;
-}
-
 void *fb_map_kernel_cache(unsigned long phys_addr, unsigned long size)
 {
 	int npages = PAGE_ALIGN(size) / PAGE_SIZE;
@@ -189,7 +162,7 @@ void *fb_map_kernel_cache(unsigned long phys_addr, unsigned long size)
 	return vaddr;
 }
 
-void Fb_unmap_kernel(void *vaddr)
+void fb_unmap_kernel(void *vaddr)
 {
 	vunmap(vaddr);
 }
@@ -315,7 +288,7 @@ int platform_fb_memory_alloc(struct fb_hw_info *hw_info, void **vir_addr, unsign
 	}
 
 	if (delay_umap)
-		Fb_unmap_kernel(tmp);
+		fb_unmap_kernel(tmp);
 	return 0;
 }
 

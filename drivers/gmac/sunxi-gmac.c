@@ -2824,7 +2824,7 @@ static int sunxi_gmac_ethtool_get_sset_count(struct net_device *netdev, int sset
 static void sunxi_gmac_ethtool_getdrvinfo(struct net_device *ndev,
 					struct ethtool_drvinfo *info)
 {
-	strlcpy(info->driver, "sunxi_gmac", sizeof(info->driver));
+	strscpy(info->driver, "sunxi_gmac", sizeof(info->driver));
 
 	strcpy(info->version, SUNXI_GMAC_MODULE_VERSION);
 	info->fw_version[0] = '\0';
@@ -3902,7 +3902,7 @@ alloc_etherdev_err:
 	return ret;
 }
 
-static int sunxi_gmac_remove(struct platform_device *pdev)
+static void sunxi_gmac_remove(struct platform_device *pdev)
 {
 	struct net_device *ndev = platform_get_drvdata(pdev);
 	struct sunxi_gmac *chip = netdev_priv(ndev);
@@ -3912,14 +3912,10 @@ static int sunxi_gmac_remove(struct platform_device *pdev)
 #endif
 	sunxi_gmac_sysfs_destroy(&pdev->dev);
 	sunxi_gmac_dma_desc_deinit(chip);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
-	unregister_netdev(ndev);
-#endif
 	netif_napi_del(&chip->napi_rx);
 	netif_napi_del(&chip->napi_tx);
 	sunxi_gmac_hardware_deinit(pdev);
 	sunxi_gmac_resource_put(pdev);
-	return 0;
 }
 
 static struct platform_driver sunxi_gmac_driver = {

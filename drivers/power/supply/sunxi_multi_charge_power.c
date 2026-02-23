@@ -281,7 +281,7 @@ static int sunxi_multi_charge_probe(struct platform_device *pdev)
 	/* parse device tree and set register */
 	sunxi_multi_charge_parse_device_tree(mc_power);
 
-	psy_cfg.of_node = pdev->dev.of_node;
+	psy_cfg.fwnode = dev_fwnode(&pdev->dev);
 	psy_cfg.drv_data = mc_power;
 
 	sunxi_multi_charge_desc.name = mc_power->name;

@@ -414,13 +414,13 @@ err_opp:
 	return rc;
 }
 
-static int sunxi_dmcfreq_remove(struct platform_device *pdev)
+static void sunxi_dmcfreq_remove(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct sunxi_dmcfreq *dmcfreq = platform_get_drvdata(pdev);
 
 	if (dmcfreq == NULL)
-		return 0;
+		return;
 
 	if (dmcfreq->input_boost_enable) {
 		del_timer(&dmcfreq->boost_timer);
@@ -429,7 +429,6 @@ static int sunxi_dmcfreq_remove(struct platform_device *pdev)
 
 	dev_pm_opp_of_remove_table(dev);
 	devfreq_event_disable_edev(dmcfreq->edev);
-	return 0;
 }
 
 static __maybe_unused int sunxi_dmcfreq_suspend(struct device *dev)

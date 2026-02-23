@@ -8,7 +8,7 @@ menu "TWI Drivers"
 config AW_TWI
 	tristate "I2C Support for Allwinner SoCs"
 	depends on AW_DMA
-	select HAS_IOMEM
+	depends on HAS_IOMEM
 	select I2C
 	select I2C_CHARDEV
 	help

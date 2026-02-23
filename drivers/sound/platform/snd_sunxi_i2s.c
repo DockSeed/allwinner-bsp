@@ -1021,19 +1021,19 @@ static int sunxi_i2s_dai_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	/* set master/slave */
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	/* bclk & lrck dir input */
-	case SND_SOC_DAIFMT_CBM_CFM:
+	case SND_SOC_DAIFMT_CBP_CFP:
 		regmap_update_bits(regmap, SUNXI_I2S_CTL, 1 << BCLK_OUT, 0 << BCLK_OUT);
 		regmap_update_bits(regmap, SUNXI_I2S_CTL, 1 << LRCK_OUT, 0 << LRCK_OUT);
 		break;
-	case SND_SOC_DAIFMT_CBS_CFM:
+	case SND_SOC_DAIFMT_CBC_CFP:
 		regmap_update_bits(regmap, SUNXI_I2S_CTL, 1 << BCLK_OUT, 1 << BCLK_OUT);
 		regmap_update_bits(regmap, SUNXI_I2S_CTL, 1 << LRCK_OUT, 0 << LRCK_OUT);
 		break;
-	case SND_SOC_DAIFMT_CBM_CFS:
+	case SND_SOC_DAIFMT_CBP_CFC:
 		regmap_update_bits(regmap, SUNXI_I2S_CTL, 1 << BCLK_OUT, 0 << BCLK_OUT);
 		regmap_update_bits(regmap, SUNXI_I2S_CTL, 1 << LRCK_OUT, 1 << LRCK_OUT);
 		break;
-	case SND_SOC_DAIFMT_CBS_CFS:
+	case SND_SOC_DAIFMT_CBC_CFC:
 		regmap_update_bits(regmap, SUNXI_I2S_CTL, 1 << BCLK_OUT, 1 << BCLK_OUT);
 		regmap_update_bits(regmap, SUNXI_I2S_CTL, 1 << LRCK_OUT, 1 << LRCK_OUT);
 		break;
@@ -2576,7 +2576,7 @@ err_devm_kzalloc:
 	return ret;
 }
 
-static int sunxi_i2s_dev_remove(struct platform_device *pdev)
+static void sunxi_i2s_dev_remove(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct device_node *np = pdev->dev.of_node;
@@ -2615,8 +2615,6 @@ static int sunxi_i2s_dev_remove(struct platform_device *pdev)
 	of_node_put(np);
 
 	SND_LOG_DEBUG("unregister i2s platform success\n");
-
-	return 0;
 }
 
 static const struct sunxi_i2s_quirks sunxi_i2s_quirks = {

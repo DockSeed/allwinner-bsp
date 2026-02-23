@@ -851,7 +851,7 @@ irqreturn_t axp517_tcpci_irq_overrides(struct tcpci *tcpci)
 			/* Read complete, clear RX status alert bit */
 			axp517_tcpci_write16(tcpci, AXP517_IRQ_PD_ALERTL_STATUS, AXP517_IRQ_PD_ALERTL_STATUS_RX_STATUS);
 
-			tcpm_pd_receive(tcpci->port, &msg);
+			tcpm_pd_receive(tcpci->port, &msg, TCPC_TX_SOP);
 		}
 	}
 
@@ -992,7 +992,7 @@ static void process_rx(struct tcpci *tcpci, u16 status)
 	/* Read complete, clear RX status alert bit */
 	axp517_tcpci_write16(chip->tcpci, AXP517_IRQ_PD_ALERTL_STATUS, AXP517_IRQ_PD_ALERTL_STATUS_RX_STATUS);
 
-	tcpm_pd_receive(tcpci->port, &msg);
+	tcpm_pd_receive(tcpci->port, &msg, TCPC_TX_SOP);
 }
 
 static int axp517_tcpci_check_battery(struct axp517_tcpci_chip *chip)

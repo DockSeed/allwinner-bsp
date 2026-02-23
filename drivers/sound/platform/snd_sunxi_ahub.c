@@ -449,12 +449,12 @@ static int sunxi_ahub_dai_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 
 	/* set master/slave */
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
-	case SND_SOC_DAIFMT_CBM_CFM:
+	case SND_SOC_DAIFMT_CBP_CFP:
 		/* lrck & bclk dir input */
 		regmap_update_bits(regmap, SUNXI_AHUB_I2S_CTL(tdm_num),
 				   0x1 << I2S_CTL_CLK_OUT, 0x0 << I2S_CTL_CLK_OUT);
 		break;
-	case SND_SOC_DAIFMT_CBS_CFS:
+	case SND_SOC_DAIFMT_CBC_CFC:
 		/* lrck & bclk dir output */
 		regmap_update_bits(regmap, SUNXI_AHUB_I2S_CTL(tdm_num),
 				   0x1 << I2S_CTL_CLK_OUT, 0x1 << I2S_CTL_CLK_OUT);

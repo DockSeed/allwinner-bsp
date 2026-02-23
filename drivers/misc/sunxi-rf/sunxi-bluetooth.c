@@ -284,20 +284,13 @@ int sunxi_bt_init(struct platform_device *pdev)
 		}
 	}
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 	data->gpio_bt_rst = of_get_named_gpio(np, "bt_rst_n", 0);
-#else
-	data->gpio_bt_rst = of_get_named_gpio_flags(np, "bt_rst_n", 0, &config);
-#endif
 	if (!gpio_is_valid(data->gpio_bt_rst)) {
 		dev_err(dev, "get gpio bt_rst failed\n");
 	} else {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 		of_property_read_u32_index(np, "bt_rst_n", 3, &config);
 		data->gpio_bt_rst_assert = (config == GPIO_ACTIVE_LOW) ? 0 : 1;
-#else
-		data->gpio_bt_rst_assert = (config == OF_GPIO_ACTIVE_LOW) ? 0 : 1;
-#endif
+
 		dev_info(dev, "bt_rst gpio=%d assert=%d\n", data->gpio_bt_rst, data->gpio_bt_rst_assert);
 
 		ret = devm_gpio_request(dev, data->gpio_bt_rst, "bt_rst");

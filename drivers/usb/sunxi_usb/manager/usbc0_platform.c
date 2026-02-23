@@ -33,7 +33,7 @@
 #include <linux/power_supply.h>
 
 #include <asm/io.h>
-#include <asm/unaligned.h>
+#include <linux/unaligned.h>
 
 #include  "../include/sunxi_usb_config.h"
 #include  "usb_hw_scan.h"

@@ -23,6 +23,7 @@
 #include "sunxi_critical_handler.h"
 #endif
 
+#include "../../../drivers/thermal/thermal_core.h"
 #include "../../../drivers/thermal/thermal_hwmon.h"
 
 #define FT_TEMP_MASK				GENMASK(11, 0)
@@ -1017,7 +1018,7 @@ static int sunxi_ths_probe(struct platform_device *pdev)
 	return ret;
 }
 
-static int sunxi_ths_remove(struct platform_device *pdev)
+static void sunxi_ths_remove(struct platform_device *pdev)
 {
 	struct ths_device *tmdev = platform_get_drvdata(pdev);
 
@@ -1028,8 +1029,6 @@ static int sunxi_ths_remove(struct platform_device *pdev)
 #if IS_ENABLED(CONFIG_AW_THERMAL_CRITICAL_HANDLER)
 	sunxi_ths_critical_handler_deinit();
 #endif
-
-	return 0;
 }
 
 static int __maybe_unused sunxi_thermal_suspend(struct device *dev)

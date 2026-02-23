@@ -819,18 +819,18 @@ static void drm_framebuffer_print_info(struct drm_printer *p, unsigned int inden
 		    fb[2] ? fb[1]->width : 0, fb[2] ? fb[2]->height : 0,
 		    fb[3] ? fb[1]->width : 0, fb[3] ? fb[3]->height : 0);
 
-	drm_printf_indent(p, indent, "p0 size  : %4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d\n",
-		    drm_framebuffer_plane_width(fb[0]->width,  fb[0], 0), fb[0]->pitches[0],
-		    drm_framebuffer_plane_height(fb[0]->height, fb[0], 0),
-		    fb[1] ? drm_framebuffer_plane_width(fb[1]->width,  fb[1], 0) : 0,
-		    fb[1] ? fb[1]->pitches[0] : 0,
-		    fb[1] ? drm_framebuffer_plane_height(fb[1]->height, fb[1], 0) : 0,
-		    fb[2] ? drm_framebuffer_plane_width(fb[2]->width,  fb[2], 0) : 0,
-		    fb[2] ? fb[2]->pitches[0] : 0,
-		    fb[2] ? drm_framebuffer_plane_height(fb[2]->height, fb[2], 0) : 0,
-		    fb[3] ? drm_framebuffer_plane_width(fb[3]->width,  fb[3], 0) : 0,
-		    fb[3] ? fb[3]->pitches[0] : 0,
-		    fb[3] ? drm_framebuffer_plane_height(fb[3]->height, fb[3], 0) : 0);
+	// drm_printf_indent(p, indent, "p0 size  : %4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d\n",
+	// 	    drm_framebuffer_plane_width(fb[0]->width,  fb[0], 0), fb[0]->pitches[0],
+	// 	    drm_framebuffer_plane_height(fb[0]->height, fb[0], 0),
+	// 	    fb[1] ? drm_framebuffer_plane_width(fb[1]->width,  fb[1], 0) : 0,
+	// 	    fb[1] ? fb[1]->pitches[0] : 0,
+	// 	    fb[1] ? drm_framebuffer_plane_height(fb[1]->height, fb[1], 0) : 0,
+	// 	    fb[2] ? drm_framebuffer_plane_width(fb[2]->width,  fb[2], 0) : 0,
+	// 	    fb[2] ? fb[2]->pitches[0] : 0,
+	// 	    fb[2] ? drm_framebuffer_plane_height(fb[2]->height, fb[2], 0) : 0,
+	// 	    fb[3] ? drm_framebuffer_plane_width(fb[3]->width,  fb[3], 0) : 0,
+	// 	    fb[3] ? fb[3]->pitches[0] : 0,
+	// 	    fb[3] ? drm_framebuffer_plane_height(fb[3]->height, fb[3], 0) : 0);
 
 	for (i = 0; i < fb_cnt; i++) {
 		if (!fb[i])
@@ -856,18 +856,18 @@ static void drm_framebuffer_print_info(struct drm_printer *p, unsigned int inden
 
 	if (fb[0]->format->num_planes > 1 || (fb[1] && fb[1]->format->num_planes > 1) ||
 		  (fb[2] && fb[2]->format->num_planes > 1) || (fb[3] && fb[3]->format->num_planes > 1)) {
-		drm_printf_indent(p, indent, "p1 size  : %4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d\n",
-			    fb[0]->format->num_planes > 1 ? drm_framebuffer_plane_width(fb[0]->width,  fb[0], 1) : 0, fb[0]->pitches[1],
-			    fb[0]->format->num_planes > 1 ? drm_framebuffer_plane_height(fb[0]->height, fb[0], 1) : 0,
-			    (fb[1] && fb[1]->format->num_planes > 1) ? drm_framebuffer_plane_width(fb[1]->width,  fb[1], 1) : 0,
-			    (fb[1] && fb[1]->format->num_planes > 1) ? fb[1]->pitches[1] : 0,
-			    (fb[1] && fb[1]->format->num_planes > 1) ? drm_framebuffer_plane_height(fb[1]->height, fb[1], 1) : 0,
-			    (fb[2] && fb[2]->format->num_planes > 1) ? drm_framebuffer_plane_width(fb[2]->width,  fb[2], 1) : 0,
-			    (fb[2] && fb[2]->format->num_planes > 1) ? fb[2]->pitches[1] : 0,
-			    (fb[2] && fb[2]->format->num_planes > 1) ? drm_framebuffer_plane_height(fb[2]->height, fb[2], 1) : 0,
-			    (fb[3] && fb[3]->format->num_planes > 1) ? drm_framebuffer_plane_width(fb[3]->width,  fb[3], 1) : 0,
-			    (fb[3] && fb[3]->format->num_planes > 1) ? fb[3]->pitches[1] : 0,
-			    (fb[3] && fb[3]->format->num_planes > 1) ? drm_framebuffer_plane_height(fb[3]->height, fb[3], 1) : 0);
+		// drm_printf_indent(p, indent, "p1 size  : %4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d\n",
+		// 	    fb[0]->format->num_planes > 1 ? drm_framebuffer_plane_width(fb[0]->width,  fb[0], 1) : 0, fb[0]->pitches[1],
+		// 	    fb[0]->format->num_planes > 1 ? drm_framebuffer_plane_height(fb[0]->height, fb[0], 1) : 0,
+		// 	    (fb[1] && fb[1]->format->num_planes > 1) ? drm_framebuffer_plane_width(fb[1]->width,  fb[1], 1) : 0,
+		// 	    (fb[1] && fb[1]->format->num_planes > 1) ? fb[1]->pitches[1] : 0,
+		// 	    (fb[1] && fb[1]->format->num_planes > 1) ? drm_framebuffer_plane_height(fb[1]->height, fb[1], 1) : 0,
+		// 	    (fb[2] && fb[2]->format->num_planes > 1) ? drm_framebuffer_plane_width(fb[2]->width,  fb[2], 1) : 0,
+		// 	    (fb[2] && fb[2]->format->num_planes > 1) ? fb[2]->pitches[1] : 0,
+		// 	    (fb[2] && fb[2]->format->num_planes > 1) ? drm_framebuffer_plane_height(fb[2]->height, fb[2], 1) : 0,
+		// 	    (fb[3] && fb[3]->format->num_planes > 1) ? drm_framebuffer_plane_width(fb[3]->width,  fb[3], 1) : 0,
+		// 	    (fb[3] && fb[3]->format->num_planes > 1) ? fb[3]->pitches[1] : 0,
+		// 	    (fb[3] && fb[3]->format->num_planes > 1) ? drm_framebuffer_plane_height(fb[3]->height, fb[3], 1) : 0);
 		for (i = 0; i < fb_cnt; i++) {
 			if (!fb[i])
 				continue;
@@ -894,18 +894,18 @@ static void drm_framebuffer_print_info(struct drm_printer *p, unsigned int inden
 
 	if (fb[0]->format->num_planes > 2 || (fb[1] && fb[1]->format->num_planes > 2) ||
 		  (fb[2] && fb[2]->format->num_planes > 2) || (fb[3] && fb[3]->format->num_planes > 2)) {
-		drm_printf_indent(p, indent, "p2 size  : %4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d\n",
-			    (fb[0] && fb[0]->format->num_planes > 2) ? drm_framebuffer_plane_width(fb[0]->width,   fb[0], 2) : 0, fb[0]->pitches[2],
-			    (fb[0] && fb[0]->format->num_planes > 2) ? drm_framebuffer_plane_height(fb[0]->height, fb[0], 2) : 0,
-			    (fb[1] && fb[1]->format->num_planes > 2) ? drm_framebuffer_plane_width(fb[1]->width,   fb[1], 2) : 0,
-			    (fb[1] && fb[1]->format->num_planes > 2) ? fb[1]->pitches[2] : 0,
-			    (fb[1] && fb[1]->format->num_planes > 2) ? drm_framebuffer_plane_height(fb[1]->height, fb[1], 2) : 0,
-			    (fb[2] && fb[2]->format->num_planes > 2) ? drm_framebuffer_plane_width(fb[2]->width,   fb[2], 2) : 0,
-			    (fb[2] && fb[2]->format->num_planes > 2) ? fb[2]->pitches[2] : 0,
-			    (fb[2] && fb[2]->format->num_planes > 2) ? drm_framebuffer_plane_height(fb[2]->height, fb[2], 2) : 0,
-			    (fb[3] && fb[3]->format->num_planes > 2) ? drm_framebuffer_plane_width(fb[3]->width,   fb[3], 2) : 0,
-			    (fb[3] && fb[3]->format->num_planes > 2) ? fb[3]->pitches[2] : 0,
-			    (fb[3] && fb[3]->format->num_planes > 2) ? drm_framebuffer_plane_height(fb[3]->height, fb[3], 2) : 0);
+		// drm_printf_indent(p, indent, "p2 size  : %4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d |%4d(%4d)  x   %4d\n",
+		// 	    (fb[0] && fb[0]->format->num_planes > 2) ? drm_framebuffer_plane_width(fb[0]->width,   fb[0], 2) : 0, fb[0]->pitches[2],
+		// 	    (fb[0] && fb[0]->format->num_planes > 2) ? drm_framebuffer_plane_height(fb[0]->height, fb[0], 2) : 0,
+		// 	    (fb[1] && fb[1]->format->num_planes > 2) ? drm_framebuffer_plane_width(fb[1]->width,   fb[1], 2) : 0,
+		// 	    (fb[1] && fb[1]->format->num_planes > 2) ? fb[1]->pitches[2] : 0,
+		// 	    (fb[1] && fb[1]->format->num_planes > 2) ? drm_framebuffer_plane_height(fb[1]->height, fb[1], 2) : 0,
+		// 	    (fb[2] && fb[2]->format->num_planes > 2) ? drm_framebuffer_plane_width(fb[2]->width,   fb[2], 2) : 0,
+		// 	    (fb[2] && fb[2]->format->num_planes > 2) ? fb[2]->pitches[2] : 0,
+		// 	    (fb[2] && fb[2]->format->num_planes > 2) ? drm_framebuffer_plane_height(fb[2]->height, fb[2], 2) : 0,
+		// 	    (fb[3] && fb[3]->format->num_planes > 2) ? drm_framebuffer_plane_width(fb[3]->width,   fb[3], 2) : 0,
+		// 	    (fb[3] && fb[3]->format->num_planes > 2) ? fb[3]->pitches[2] : 0,
+		// 	    (fb[3] && fb[3]->format->num_planes > 2) ? drm_framebuffer_plane_height(fb[3]->height, fb[3], 2) : 0);
 
 		for (i = 0; i < fb_cnt; i++) {
 			if (!fb[i])

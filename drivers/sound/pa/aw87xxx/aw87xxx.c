@@ -43,6 +43,7 @@
 #include <linux/ktime.h>
 #include <linux/kthread.h>
 #include <linux/miscdevice.h>
+#include <linux/vmalloc.h>
 #include <uapi/sound/asound.h>
 #include <sound/control.h>
 #include <sound/soc.h>
@@ -71,18 +72,10 @@ unsigned int g_aw87xxx_dev_cnt;
 static const char *const aw87xxx_monitor_switch[] = {"Disable", "Enable"};
 static const char *const aw87xxx_spin_switch[] = {"spin_0", "spin_90",
 					 "spin_180", "spin_270"};
-#ifdef AW_KERNEL_VER_OVER_4_19_1
+
 static struct aw_componet_codec_ops aw_componet_codec_ops = {
 	.add_codec_controls = snd_soc_add_component_controls,
-	.unregister_codec = snd_soc_unregister_component,
 };
-#else
-static struct aw_componet_codec_ops aw_componet_codec_ops = {
-	.add_codec_controls = snd_soc_add_codec_controls,
-	.unregister_codec = snd_soc_unregister_codec,
-};
-#endif
-
 
 /************************************************************************
  *
@@ -1753,7 +1746,7 @@ static int aw87xxx_dtsi_parse(struct aw87xxx *aw87xxx,
 	}
 
 	/* add psy for battery det */
-	aw87xxx->psy = devm_power_supply_get_by_phandle(aw87xxx->dev,
+	aw87xxx->psy = devm_power_supply_get_by_reference(aw87xxx->dev,
 								"det_battery_supply");
 	if (!aw87xxx->psy || IS_ERR(aw87xxx->psy))
 		AW_DEV_LOGE(aw87xxx->dev, "get det_battery_supply failed\n");
@@ -1794,12 +1787,7 @@ static struct aw87xxx *aw87xxx_malloc_init(struct i2c_client *client)
 	return aw87xxx;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
 static int aw87xxx_i2c_probe(struct i2c_client *client)
-#else
-static int aw87xxx_i2c_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
-#endif
 {
 	struct device_node *dev_node = client->dev.of_node;
 	struct aw87xxx *aw87xxx = NULL;

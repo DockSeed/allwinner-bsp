@@ -460,7 +460,6 @@ static int ve_debugfs_release(struct inode *inode, struct file *file)
 static const struct file_operations ve_debugfs_fops = {
 	.owner   = THIS_MODULE,
 	.open    = ve_debugfs_open,
-	.llseek  = no_llseek,
 	.read    = ve_debugfs_read,
 	.write   = ve_debugfs_write,
 	.release = ve_debugfs_release,
@@ -598,7 +597,6 @@ static int ve_debugfs_advance_release(struct inode *inode, struct file *file)
 static const struct file_operations ve_debugfs_advance_fops = {
 	.owner   = THIS_MODULE,
 	.open    = ve_debugfs_advance_open,
-	.llseek  = no_llseek,
 	.read    = ve_debugfs_advance_read,
 	.write   = ve_debugfs_advance_write,
 	.release = ve_debugfs_advance_release,

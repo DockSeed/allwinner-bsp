@@ -10,6 +10,7 @@ config AW_DRM
 	select DRM_KMS_DMA_HELPER
 	select DRM_GEM_DMA_HELPER
 	select DRM_DISPLAY_HELPER
+	select DRM_CLIENT
 	select VIDEOMODE_HELPERS
 	default n
 

@@ -424,7 +424,7 @@ static void husb311_init_tcpci_data_late(struct husb311_chip *chip)
 		chip->vbus_tryon_debounce, chip->vbus_check_debounce);
 }
 
-irqreturn_t tcpci_irq_override(struct tcpci *tcpci)
+static irqreturn_t tcpci_irq_override(struct tcpci *tcpci)
 {
 	u16 status;
 	int ret;
@@ -485,7 +485,7 @@ irqreturn_t tcpci_irq_override(struct tcpci *tcpci)
 		/* Read complete, clear RX status alert bit */
 		tcpci_write16(tcpci, TCPC_ALERT, TCPC_ALERT_RX_STATUS);
 
-		tcpm_pd_receive(tcpci->port, &msg);
+		tcpm_pd_receive(tcpci->port, &msg, TCPC_TX_SOP);
 	}
 
 	if (tcpci->data->vbus_vsafe0v && (status & TCPC_ALERT_EXTENDED_STATUS)) {
@@ -573,15 +573,9 @@ static int husb311_init_gpio(struct husb311_chip *chip)
 	}
 	chip->gpio_int_n = ret;
 
-	ret = devm_gpio_request(chip->dev, chip->gpio_int_n, "husb311,intr_gpio");
+	ret = devm_gpio_request_one(chip->dev, chip->gpio_int_n, GPIOF_IN, "husb311,intr_gpio");
 	if (ret < 0) {
 		dev_err(dev, "failed to request GPIO%d (ret = %d)\n", chip->gpio_int_n, ret);
-		return ret;
-	}
-
-	ret = gpio_direction_input(chip->gpio_int_n);
-	if (ret < 0) {
-		dev_err(dev, "failed to set GPIO%d as input pin(ret = %d)\n", chip->gpio_int_n, ret);
 		return ret;
 	}
 
@@ -712,7 +706,7 @@ static int husb311_probe(struct i2c_client *client)
 	i2c_set_clientdata(client, chip);
 
 	if (of_find_property(chip->dev->of_node, "det_usb_supply", NULL)) {
-		chip->usb_psy = devm_power_supply_get_by_phandle(chip->dev, "det_usb_supply");
+		chip->usb_psy = devm_power_supply_get_by_reference(chip->dev, "det_usb_supply");
 	} else {
 		pr_err("husb311 failed to find usb power\n");
 		chip->usb_psy =  NULL;

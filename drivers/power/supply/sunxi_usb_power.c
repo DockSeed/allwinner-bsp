@@ -241,7 +241,7 @@ static int sunxi_usb_power_parse_device_tree(struct sunxi_usb_power_supply_data 
 	if (np) {
 		if (of_device_is_available(np)) {
 			PMIC_INFO("usb power device is enabled\n");
-			psy = devm_power_supply_get_by_phandle(usb_power->dev, "det_usb_supply");
+			psy = devm_power_supply_get_by_reference(usb_power->dev, "det_usb_supply");
 			if (IS_ERR_OR_NULL(psy)) {
 				PMIC_ERR("usb power device is not ready\n");
 				return -EPROBE_DEFER;
@@ -295,7 +295,7 @@ static int sunxi_usb_power_gpio_det_init_common(struct sunxi_usb_power_supply_da
 
 	memset(&gpio_para, 0, sizeof(gpio_para));
 
-	gpio_para.gpio = of_get_named_gpio(psy->of_node, gpio_name, 0);
+	gpio_para.gpio = of_get_named_gpio(psy->dev.of_node, gpio_name, 0);
 	if (gpio_para.gpio < 0) {
 		PMIC_INFO("%s not detected\n", gpio_name);
 		return 0;
@@ -397,7 +397,7 @@ static int sunxi_usb_power_probe(struct platform_device *pdev)
 	usb_power->name = "sunxi_usb";
 	usb_power->dev = &pdev->dev;
 
-	psy_cfg.of_node = pdev->dev.of_node;
+	psy_cfg.fwnode = dev_fwnode(&pdev->dev);
 	psy_cfg.drv_data = usb_power;
 
 	ret = sunxi_usb_power_parse_device_tree(usb_power);
@@ -453,7 +453,7 @@ static void sunxi_usb_power_delayed_work_set(struct sunxi_usb_power_supply_data 
 	}
 }
 
-static int sunxi_usb_power_remove(struct platform_device *pdev)
+static void sunxi_usb_power_remove(struct platform_device *pdev)
 {
 	struct sunxi_usb_power_supply_data *usb_power = platform_get_drvdata(pdev);
 
@@ -464,8 +464,6 @@ static int sunxi_usb_power_remove(struct platform_device *pdev)
 		power_supply_unregister(usb_power->usb_power_core_psy);
 	}
 	PMIC_DEV_DEBUG(&pdev->dev, "teardown sunxi usb power dev\n");
-
-	return 0;
 }
 
 static void sunxi_usb_power_shutdown(struct platform_device *pdev)

@@ -443,20 +443,20 @@ static int sunxi_ohci_hcd_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int sunxi_ohci_hcd_remove(struct platform_device *pdev)
+static void sunxi_ohci_hcd_remove(struct platform_device *pdev)
 {
 	struct sunxi_hci_hcd *sunxi_ohci = NULL;
 	int ret = 0;
 
 	if (pdev == NULL) {
 		DMSG_ERR("ERR: %s, Argment is invalid\n", __func__);
-		return -1;
+		return;
 	}
 
 	sunxi_ohci = pdev->dev.platform_data;
 	if (sunxi_ohci == NULL) {
 		DMSG_ERR("ERR: %s, sunxi_ohci is null\n", __func__);
-		return -1;
+		return;
 	}
 
 	if (ohci_enable[sunxi_ohci->usbc_no] == 0)
@@ -473,11 +473,8 @@ static int sunxi_ohci_hcd_remove(struct platform_device *pdev)
 		ret = sunxi_rmmod_ohci(pdev);
 		if (ret == 0)
 			exit_sunxi_hci(sunxi_ohci);
-
-
-		return ret;
-	} else
-		return 0;
+		return;
+	}
 }
 
 static void sunxi_ohci_hcd_shutdown(struct platform_device *pdev)

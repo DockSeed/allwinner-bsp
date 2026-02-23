@@ -49,7 +49,7 @@ sunxi_drm_create_attach_property_bitmask(struct drm_device *drm,
 					 uint64_t support_bit,
 					 uint64_t init_bit);
 
-int drm_mode_to_sunxi_video_timings(struct drm_display_mode *mode,
+int drm_mode_to_sunxi_video_timings(const struct drm_display_mode *mode,
 				    struct disp_video_timings *timing);
 
 struct drm_connector *drm_device_to_connector(struct drm_device *dev,

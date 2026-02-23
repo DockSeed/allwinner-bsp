@@ -79,7 +79,7 @@ static int axp517_check_usb(struct axp517_acin_power *acin_power)
 		return 0;
 
 	if (acin_power->usb_psy == NULL) {
-		acin_power->usb_psy = devm_power_supply_get_by_phandle(acin_power->dev,
+		acin_power->usb_psy = devm_power_supply_get_by_reference(acin_power->dev,
 									"det_usb_supply");
 	}
 	if (!(acin_power->usb_psy && (!IS_ERR(acin_power->usb_psy))))
@@ -383,7 +383,7 @@ static int axp517_acin_probe(struct platform_device *pdev)
 	/* parse device tree and set register */
 	axp517_acin_parse_device_tree(acin_power);
 
-	psy_cfg.of_node = pdev->dev.of_node;
+	psy_cfg.fwnode = dev_fwnode(&pdev->dev);
 	psy_cfg.drv_data = acin_power;
 
 	acin_power->acin_supply = devm_power_supply_register(acin_power->dev,

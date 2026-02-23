@@ -80,7 +80,7 @@ int sunxi_hdmi_extcon_init(struct sunxi_codec *codec)
 	pdev = codec->pdev;
 	hdmi_extcon = &codec->hdmi_extcon;
 	np = pdev->dev.of_node;
-	if (of_property_read_bool(np, "extcon")) {
+	if (of_property_present(np, "extcon")) {
 		hdmi_extcon->extdev = extcon_get_edev_by_phandle(&pdev->dev, 0);
 		if (IS_ERR(hdmi_extcon->extdev)) {
 			SND_LOG_ERR("get extcon dev failed\n");
@@ -439,7 +439,7 @@ static int sunxi_codec_dev_probe(struct platform_device *pdev)
 		goto err_devm_kzalloc;
 	}
 
-	SND_LOG_ERR("register codec-hdmi success\n");
+	SND_LOG_INFO("register codec-hdmi success\n");
 
 	return 0;
 
@@ -449,7 +449,7 @@ err_devm_kzalloc:
 	return ret;
 }
 
-static int sunxi_codec_dev_remove(struct platform_device *pdev)
+static void sunxi_codec_dev_remove(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct sunxi_codec *codec = dev_get_drvdata(dev);
@@ -462,9 +462,7 @@ static int sunxi_codec_dev_remove(struct platform_device *pdev)
 	devm_kfree(dev, codec);
 	of_node_put(pdev->dev.of_node);
 
-	SND_LOG_ERR("unregister codec-hdmi success\n");
-
-	return 0;
+	SND_LOG_INFO("unregister codec-hdmi success\n");
 }
 
 static const struct of_device_id sunxi_codec_of_match[] = {

@@ -52,8 +52,8 @@ static void sunxi_drm_heap_free(struct heap_helper_buffer *buffer)
 }
 
 static struct dma_buf *sunxi_drm_heap_allocate(struct dma_heap *heap, unsigned long len,
-				   unsigned long fd_flags,
-				   unsigned long heap_flags)
+				   u32 fd_flags,
+				   u64 heap_flags)
 {
 	struct heap_helper_buffer *helper_buffer;
 	struct dma_buf *dmabuf;

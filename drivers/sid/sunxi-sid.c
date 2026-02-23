@@ -567,7 +567,7 @@ int sunxi_sid_sram_read32(const char *key, u32 *data)
 	return 0;
 
 fail:
-	sunxi_err(NULL, "Fail to read '%s' in dts\n", prop);
+	sunxi_debug(NULL, "Fail to read '%s' in dts\n", prop);
 	return err;
 }
 EXPORT_SYMBOL_GPL(sunxi_sid_sram_read32);

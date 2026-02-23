@@ -91,65 +91,6 @@ static const struct typec_operations sunxi_usb_ops = {
 
 #endif
 
-#if IS_ENABLED(CONFIG_DUAL_ROLE_USB_INTF)
-static enum dual_role_property sunxi_usb_dr_properties[] = {
-	DUAL_ROLE_PROP_SUPPORTED_MODES,
-	DUAL_ROLE_PROP_MODE,
-	DUAL_ROLE_PROP_PR,
-	DUAL_ROLE_PROP_DR,
-};
-
-static int sunxi_dr_get_property(struct dual_role_phy_instance *dual_role,
-			enum dual_role_property prop, unsigned int *val)
-{
-	enum sw_usb_role role = SW_USB_ROLE_NULL;
-	int mode, pr, dr;
-
-	/*
-	 * FIXME: e.g
-	 * 1.mutex_lock is needed ?
-	 * 2.synchronize current status before updated role ?
-	 * ...
-	 */
-
-	role = get_usb_role();
-
-	if (role == SW_USB_ROLE_HOST) {
-		DMSG_DEBUG("mode is HOST(DFP)\n");
-		mode = DUAL_ROLE_PROP_MODE_DFP;
-		pr = DUAL_ROLE_PROP_PR_SRC;
-		dr = DUAL_ROLE_PROP_DR_HOST;
-	} else if (role == SW_USB_ROLE_DEVICE) {
-		DMSG_DEBUG("mode is DEVICE(UFP)\n");
-		mode = DUAL_ROLE_PROP_MODE_UFP;
-		pr = DUAL_ROLE_PROP_PR_SNK;
-		dr = DUAL_ROLE_PROP_DR_DEVICE;
-	} else {
-		DMSG_DEBUG("mode is NULL(NONE)\n");
-		mode = DUAL_ROLE_PROP_MODE_NONE;
-		pr = DUAL_ROLE_PROP_PR_NONE;
-		dr = DUAL_ROLE_PROP_DR_NONE;
-	}
-
-	switch (prop) {
-	case DUAL_ROLE_PROP_MODE:
-		*val = mode;
-		break;
-	case DUAL_ROLE_PROP_PR:
-		*val = pr;
-		break;
-	case DUAL_ROLE_PROP_DR:
-		*val = dr;
-		break;
-	default:
-		DMSG_ERR("unsupported property %d\n", prop);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-#endif
-
 #if IS_ENABLED(CONFIG_USB_ROLE_SWITCH)
 #define ROLE_SWITCH 1
 static inline enum sw_usb_role to_sw_usb_role(enum usb_role role)
@@ -245,15 +186,9 @@ static void sunxi_usb_set_mode(enum sw_usb_role sw_role, bool callback)
 }
 
 /* add linux version judgment, applicable to linux-5.4 version of sunxi-dev-andes branch. */
-#if (LINUX_VERSION_CODE == KERNEL_VERSION(5, 4, 220))
-static int sunxi_usb_role_switch_set(struct device *dev, enum usb_role role)
-{
-	struct usb_cfg __maybe_unused *cfg = dev_get_drvdata(dev);
-#else
 static int sunxi_usb_role_switch_set(struct usb_role_switch *sw, enum usb_role role)
 {
 	struct usb_cfg __maybe_unused *cfg = usb_role_switch_get_drvdata(sw);
-#endif
 	enum sw_usb_role current_role = get_usb_role();
 	enum sw_usb_role sw_role = to_sw_usb_role(role);
 
@@ -282,20 +217,16 @@ static int sunxi_usb_role_switch_set(struct usb_role_switch *sw, enum usb_role r
 }
 
 /* add linux version judgment, applicable to linux-5.4 version of sunxi-dev-andes branch. */
-#if (LINUX_VERSION_CODE == KERNEL_VERSION(5, 4, 220))
-static enum usb_role sunxi_usb_role_switch_get(struct device *dev)
-{
-#else
+
 static enum usb_role sunxi_usb_role_switch_get(struct usb_role_switch *sw)
 {
 	struct usb_cfg __maybe_unused *cfg = usb_role_switch_get_drvdata(sw);
-#endif
 	enum sw_usb_role sw_role = get_usb_role();
 
 	return to_usb_role(sw_role);
 }
 
-int sunxi_setup_role_switch(struct usb_cfg *cfg)
+static int sunxi_setup_role_switch(struct usb_cfg *cfg)
 {
 	struct usb_role_switch_desc role_sw_desc = {0};
 	struct device *dev = &(cfg->pdev->dev);
@@ -304,10 +235,7 @@ int sunxi_setup_role_switch(struct usb_cfg *cfg)
 	role_sw_desc.set = sunxi_usb_role_switch_set;
 	role_sw_desc.get = sunxi_usb_role_switch_get;
 /* add linux version judgment, applicable to linux-5.4 version of sunxi-dev-andes branch. */
-#if (LINUX_VERSION_CODE == KERNEL_VERSION(5, 4, 220))
-#else
 	role_sw_desc.driver_data = cfg;
-#endif
 	cfg->role_sw = usb_role_switch_register(dev, &role_sw_desc);
 	if (IS_ERR(cfg->role_sw))
 		return PTR_ERR(cfg->role_sw);
@@ -799,12 +727,12 @@ static int sunxi_otg_manager_probe(struct platform_device *pdev)
 				return -1;
 			}
 		} else if (g_usb_cfg.port.detect_type == USB_DETECT_TYPE_VBUS_PMU) {
-#if IS_ENABLED(CONFIG_POWER_SUPPLY)
 
+#if IS_ENABLED(CONFIG_POWER_SUPPLY)
 			if (of_find_property(np, "det_vbus_supply", NULL))
-				g_usb_cfg.port.pmu_psy = devm_power_supply_get_by_phandle(&pdev->dev,
+				g_usb_cfg.port.pmu_psy = devm_power_supply_get_by_reference(&pdev->dev,
 											"det_vbus_supply");
-			if (!g_usb_cfg.port.pmu_psy  || IS_ERR(g_usb_cfg.port.pmu_psy)) {
+			if (!g_usb_cfg.port.pmu_psy || IS_ERR(g_usb_cfg.port.pmu_psy)) {
 				DMSG_WARN("%s()%d WARN: get power supply failed\n", __func__, __LINE__);
 				if (!IS_ERR_OR_NULL(g_usb_cfg.port.usbc_regulator))
 					regulator_disable(g_usb_cfg.port.usbc_regulator);
@@ -840,6 +768,7 @@ static int sunxi_otg_manager_probe(struct platform_device *pdev)
 				atomic_set(&g_usb_cfg.det_flag, 1);
 			}
 #endif
+
 		} else if (g_usb_cfg.port.detect_type == USB_DETECT_TYPE_ROLE_SW) {
 			atomic_set(&rolesw_suspend_flag, 0);
 #if IS_ENABLED(CONFIG_EXTCON)
@@ -863,25 +792,17 @@ static int sunxi_otg_manager_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int sunxi_otg_manager_remove(struct platform_device *pdev)
+static void sunxi_otg_manager_remove(struct platform_device *pdev)
 {
 
 	int ret;
-#if IS_ENABLED(CONFIG_DUAL_ROLE_USB_INTF)
-	struct dual_role_phy_instance *dual_role = g_usb_cfg.port.dual_role;
-#endif
 
 	if (g_usb_cfg.port.enable == 0) {
 		DMSG_WARN("wrn: usb0 is disable\n");
-		return 0;
+		return;
 	}
 
 	if (g_usb_cfg.port.port_type == USB_PORT_TYPE_OTG) {
-#if IS_ENABLED(CONFIG_DUAL_ROLE_USB_INTF)
-		devm_dual_role_instance_unregister(&pdev->dev, dual_role);
-		dual_role = NULL;
-#endif
-
 		thread_run_flag = 0;
 		thread_pmu_run_flag = 0;
 		while (!thread_stopped_flag) {
@@ -916,8 +837,6 @@ static int sunxi_otg_manager_remove(struct platform_device *pdev)
 
 	sunxi_det_vbus_gpio_disable_power(&g_usb_cfg);
 	cancel_work_sync(&g_usb_cfg.resume_work);
-
-	return 0;
 }
 
 #if IS_ENABLED(CONFIG_PM)

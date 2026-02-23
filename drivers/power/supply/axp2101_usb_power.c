@@ -317,7 +317,7 @@ static int axp2101_usb_probe(struct platform_device *pdev)
 	/* for device tree parse */
 	axp2101_usb_parse_device_tree(usb_power);
 
-	psy_cfg.of_node = pdev->dev.of_node;
+	psy_cfg.fwnode = dev_fwnode(&pdev->dev);
 	psy_cfg.drv_data = usb_power;
 
 	usb_power->usb_supply = devm_power_supply_register(usb_power->dev,

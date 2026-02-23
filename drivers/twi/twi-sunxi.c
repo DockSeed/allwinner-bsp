@@ -3133,7 +3133,7 @@ static int sunxi_twi_probe(struct platform_device *pdev)
 	twi->adap.nr = twi->bus_num;
 	twi->adap.retries = 3;
 	twi->adap.timeout = 3 * HZ;
-	twi->adap.class = I2C_CLASS_HWMON | I2C_CLASS_SPD;
+	twi->adap.class = I2C_CLASS_HWMON | (1<<7);
 	twi->adap.algo = &sunxi_twi_algorithm;
 	twi->adap.bus_recovery_info = &sunxi_twi_bus_recovery;
 	twi->adap.lock_ops = &sunxi_twi_adap_lock_ops;
@@ -3182,7 +3182,7 @@ err0:
 	return err;
 }
 
-static int sunxi_twi_remove(struct platform_device *pdev)
+static void sunxi_twi_remove(struct platform_device *pdev)
 {
 	struct sunxi_twi *twi = platform_get_drvdata(pdev);
 
@@ -3214,8 +3214,6 @@ static int sunxi_twi_remove(struct platform_device *pdev)
 	sunxi_twi_resource_put(twi);
 
 	TWI_DBG(twi, "remove\n");
-
-	return 0;
 }
 
 static void sunxi_twi_shutdown(struct platform_device *pdev)

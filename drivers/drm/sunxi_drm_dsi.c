@@ -189,7 +189,7 @@ static void __maybe_unused esd_watchdog_start(struct esd_sw_wd *esd_wdt)
 
 static void __maybe_unused esd_watchdog_stop(struct esd_sw_wd *esd_wdt)
 {
-	del_timer_sync(&esd_wdt->timer);
+	timer_delete_sync(&esd_wdt->timer);
 }
 
 static irqreturn_t te_irq_handler(int irq, void *data)
@@ -305,7 +305,7 @@ static void display_recovery_work(struct work_struct *work)
 
 static void esd_watchdog_timeout(struct timer_list *t)
 {
-	struct esd_sw_wd *esd_wdt = from_timer(esd_wdt, t, timer);
+	struct esd_sw_wd *esd_wdt = timer_container_of(esd_wdt, t, timer);
 
 	atomic_set(&esd_wdt->fed, 0);
 	schedule_work(&esd_wdt->recovery_work);

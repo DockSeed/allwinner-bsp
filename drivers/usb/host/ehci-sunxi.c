@@ -29,6 +29,7 @@
 #include <linux/usb.h>
 #include <linux/usb/hcd.h>
 #include <linux/regulator/consumer.h>
+#include <linux/pm.h>
 #include "ehci.h"
 #include "sunxi-hci.h"
 
@@ -851,20 +852,20 @@ static int sunxi_ehci_hcd_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int sunxi_ehci_hcd_remove(struct platform_device *pdev)
+static void sunxi_ehci_hcd_remove(struct platform_device *pdev)
 {
 	struct sunxi_hci_hcd *sunxi_ehci = NULL;
 	int ret = 0;
 
 	if (pdev == NULL) {
 		DMSG_ERR("ERR: %s, Argment is invalid\n", __func__);
-		return -1;
+		return;
 	}
 
 	sunxi_ehci = pdev->dev.platform_data;
 	if (sunxi_ehci == NULL) {
 		DMSG_ERR("ERR: %s, sunxi_ehci is null\n", __func__);
-		return -1;
+		return;
 	}
 
 	if (ehci_enable[sunxi_ehci->usbc_no] == 0) {
@@ -883,11 +884,7 @@ static int sunxi_ehci_hcd_remove(struct platform_device *pdev)
 		ret = sunxi_rmmod_ehci(pdev);
 		if (ret == 0)
 			exit_sunxi_hci(sunxi_ehci);
-
-		return ret;
-	} else
-		return 0;
-
+	}
 }
 
 static void sunxi_ehci_hcd_shutdown(struct platform_device *pdev)

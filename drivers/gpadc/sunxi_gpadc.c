@@ -40,6 +40,7 @@
 #include <linux/version.h>
 #include <linux/gpio.h>
 #include <linux/pinctrl/consumer.h>
+#include <linux/platform_device.h>
 #if IS_ENABLED(CONFIG_IIO)
 #include <linux/iio/iio.h>
 #include <linux/iio/machine.h>
@@ -2072,7 +2073,7 @@ err0:
 	return err;
 }
 
-static int sunxi_gpadc_remove(struct platform_device *pdev)
+static void sunxi_gpadc_remove(struct platform_device *pdev)
 {
 	struct sunxi_gpadc *chip = platform_get_drvdata(pdev);
 	int err;
@@ -2087,7 +2088,7 @@ static int sunxi_gpadc_remove(struct platform_device *pdev)
 	sunxi_gpadc_sysfs_destroy(chip);
 	err = sunxi_gpadc_hw_exit(chip);
 	if (err)
-		return err;
+		return;
 	sunxi_gpadc_inputdev_unregister(chip);
 
 #ifdef CONFIG_AW_AMP_SYS_RSC_MANAGER
@@ -2097,8 +2098,6 @@ static int sunxi_gpadc_remove(struct platform_device *pdev)
 #endif
 
 	sunxi_gpadc_resource_put(chip);
-
-	return 0;
 }
 
 #if IS_ENABLED(CONFIG_PM)

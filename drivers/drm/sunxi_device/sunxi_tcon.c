@@ -18,6 +18,7 @@
 #include <linux/component.h>
 #include <linux/phy/phy.h>
 #include <linux/of_platform.h>
+#include <linux/platform_device.h>
 #include <linux/reset.h>
 #include <linux/delay.h>
 
@@ -1130,9 +1131,9 @@ out:
 }
 
 //TODO
-static int sunxi_tcon_remove(struct platform_device *pdev)
+static void sunxi_tcon_remove(struct platform_device *pdev)
 {
-	return 0;
+	return;
 }
 
 struct platform_driver sunxi_tcon_platform_driver = {

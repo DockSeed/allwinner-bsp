@@ -1148,7 +1148,7 @@ probe_done:
 
 }
 
-static int di_remove(struct platform_device *pdev)
+static void di_remove(struct platform_device *pdev)
 {
 	struct di_driver_data *drvdata;
 
@@ -1181,8 +1181,6 @@ static int di_remove(struct platform_device *pdev)
 		}
 #endif
 	}
-
-	return 0;
 }
 
 static int di_suspend(struct device *dev)
@@ -1305,5 +1303,5 @@ MODULE_AUTHOR("zhengwanyu@allwinnertech.com");
 MODULE_DESCRIPTION("Sunxi De-Interlace");
 MODULE_VERSION("1.0.0");
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
-MODULE_IMPORT_NS(DMA_BUF);
+MODULE_IMPORT_NS("DMA_BUF");
 #endif

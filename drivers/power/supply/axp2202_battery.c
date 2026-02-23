@@ -84,7 +84,7 @@ static int axp2202_qc_power_get(struct axp2202_bat_power *bat_power)
 			bat_power->qc_supply_np =  NULL;
 			ret = -1;
 		} else {
-			bat_power->qc_psy = devm_power_supply_get_by_phandle(bat_power->dev,
+			bat_power->qc_psy = devm_power_supply_get_by_reference(bat_power->dev,
 							"det_qc_supply");
 			bat_power->qc_supply_np = np;
 			if (!(bat_power->qc_psy) || (IS_ERR(bat_power->qc_psy))) {
@@ -1947,7 +1947,7 @@ static int axp2202_battery_probe(struct platform_device *pdev)
 		goto err;
 	}
 
-	psy_cfg.of_node = pdev->dev.of_node;
+	psy_cfg.fwnode = dev_fwnode(&pdev->dev);
 	psy_cfg.drv_data = bat_power;
 
 	bat_power->bat_supply = devm_power_supply_register(bat_power->dev,

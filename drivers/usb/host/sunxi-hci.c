@@ -32,17 +32,13 @@
 #include <linux/gpio.h>
 #include <linux/version.h>
 
-#if (LINUX_VERSION_CODE == KERNEL_VERSION(5, 4, 220))
-#include <linux/kthread.h>
-#endif
-
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include <linux/dma-mapping.h>
 
 #include <asm/byteorder.h>
 #include <asm/io.h>
-#include <asm/unaligned.h>
+#include <linux/unaligned.h>
 #include <linux/regulator/consumer.h>
 #include  <linux/of.h>
 #include  <linux/of_address.h>

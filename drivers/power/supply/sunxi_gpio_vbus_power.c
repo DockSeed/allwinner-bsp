@@ -149,7 +149,7 @@ static int sunxi_gpio_power_probe(struct platform_device *pdev)
 		goto err;
 	}
 
-	psy_cfg.of_node = pdev->dev.of_node;
+	psy_cfg.fwnode = dev_fwnode(&pdev->dev);
 	psy_cfg.drv_data = gpio_power;
 
 	platform_set_drvdata(pdev, gpio_power);

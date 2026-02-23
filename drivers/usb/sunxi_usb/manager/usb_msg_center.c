@@ -33,7 +33,7 @@
 
 #include <asm/io.h>
 #include <asm/irq.h>
-#include <asm/unaligned.h>
+#include <linux/unaligned.h>
 
 #include  "../include/sunxi_usb_config.h"
 #include  "usb_manager.h"
@@ -104,7 +104,7 @@ static void insmod_host_driver(struct usb_msg_center_info *center_info)
 	desc.accessory = TYPEC_ACCESSORY_NONE; /* XXX: handle accessories */
 	desc.identity = NULL;
 #endif
-	DMSG_INFO("insmod_host_driver\n\n");
+	DMSG_INFO("insmod_host_driver\n");
 
 	set_usb_role(center_info, SW_USB_ROLE_HOST);
 
@@ -138,7 +138,7 @@ static void rmmod_host_driver(struct usb_msg_center_info *center_info)
 	struct usb_cfg *cfg = &g_usb_cfg;
 	struct typec_partner *partner = cfg->port.partner;
 #endif
-	DMSG_INFO("rmmod_host_driver\n\n");
+	DMSG_INFO("rmmod_host_driver\n");
 
 #if IS_ENABLED(CONFIG_ARCH_SUN8IW6)
 #if IS_ENABLED(CONFIG_USB_SUNXI_HCD0)
@@ -188,7 +188,7 @@ static void insmod_device_driver(struct usb_msg_center_info *center_info)
 	desc.identity = NULL;
 
 #endif
-	DMSG_INFO("insmod_device_driver\n\n");
+	DMSG_INFO("insmod_device_driver\n");
 
 	set_usb_role(center_info, SW_USB_ROLE_DEVICE);
 
@@ -221,7 +221,7 @@ static void rmmod_device_driver(struct usb_msg_center_info *center_info)
 	struct typec_partner *partner = cfg->port.partner;
 #endif
 
-	DMSG_INFO("rmmod_device_driver\n\n");
+	DMSG_INFO("rmmod_device_driver\n");
 
 	set_usb_role(center_info, SW_USB_ROLE_NULL);
 

@@ -557,8 +557,7 @@ static int sunxi_pmic_cc_logic_work_init(struct sunxi_pmic_cc_logic *port)
 	port->debounce_jiffies = msecs_to_jiffies(TCPM_DEBOUNCE_MS);
 	INIT_DELAYED_WORK(&port->wq_detcable, sunxi_cc_logic_detect_cable);
 	kthread_init_work(&port->state_machine, state_machine_work);
-	hrtimer_init(&port->state_machine_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	port->state_machine_timer.function = state_machine_timer_handler;
+	hrtimer_setup(&port->state_machine_timer, state_machine_timer_handler, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 
 	INIT_DELAYED_WORK(&port->vbus_online_mon, sunxi_pmic_cc_logic_check_vbus_online_process);
 
@@ -759,7 +758,7 @@ static int sunxi_pmic_cc_logic_parse_device_tree(struct sunxi_pmic_cc_logic *por
 	np = of_parse_phandle(node, "det_usb_supply", 0);
 	if (np) {
 		if (of_device_is_available(np)) {
-			port->usb_power_psy = devm_power_supply_get_by_phandle(port->dev, "det_usb_supply");
+			port->usb_power_psy = devm_power_supply_get_by_reference(port->dev, "det_usb_supply");
 			if (IS_ERR_OR_NULL(port->usb_power_psy))
 				return -EPROBE_DEFER;
 			PMIC_INFO("get det_usb_supply\n");
@@ -917,7 +916,7 @@ static int sunxi_pmic_cc_logic_probe(struct platform_device *pdev)
 		goto out_init_regs_false;
 	}
 
-	psy_cfg.of_node = pdev->dev.of_node;
+	psy_cfg.fwnode = dev_fwnode(&pdev->dev);
 	psy_cfg.drv_data = port;
 
 	port->cc_logic_psy = devm_power_supply_register(port->dev, &sunxi_pmic_cc_logic_desc,
@@ -1000,7 +999,7 @@ static void sunxi_pmic_cc_logic_virq_dts_set(struct sunxi_pmic_cc_logic *port, b
 	}
 }
 
-static int sunxi_pmic_cc_logic_remove(struct platform_device *pdev)
+static void sunxi_pmic_cc_logic_remove(struct platform_device *pdev)
 {
 	struct sunxi_pmic_cc_logic *port = platform_get_drvdata(pdev);
 
@@ -1013,8 +1012,6 @@ static int sunxi_pmic_cc_logic_remove(struct platform_device *pdev)
 	cancel_delayed_work_sync(&port->vbus_online_mon);
 	power_supply_unregister(port->cc_logic_psy);
 	sunxi_power_debugfs_exit(port->debug);
-
-	return 0;
 }
 
 static void sunxi_pmic_cc_logic_shutdown(struct platform_device *pdev)

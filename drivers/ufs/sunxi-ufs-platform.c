@@ -237,7 +237,7 @@ int ufshcd_sunxi_dme_set_attrs(struct ufs_hba *hba,
 	return 0;
 }
 
-int ufshcd_sunxi_dme_dump_attrs(struct ufs_hba *hba,
+static int ufshcd_sunxi_dme_dump_attrs(struct ufs_hba *hba,
 				const struct ufshcd_dme_attr_val *v, int n)
 {
 	int ret = 0;
@@ -266,7 +266,7 @@ int ufshcd_sunxi_dme_dump_attrs(struct ufs_hba *hba,
  *
  * Returns 0 on success or non-zero value on failure
  */
-int tc_sunxi_cr_read(struct ufs_hba *hba, u16 reg, u16 *val)
+static int tc_sunxi_cr_read(struct ufs_hba *hba, u16 reg, u16 *val)
 {
 	struct ufshcd_dme_attr_val data[] = {
 		{ UIC_ARG_MIB(TC_CBC_REG_ADDR_LSB), TC_LSB(0), DME_LOCAL },
@@ -315,7 +315,7 @@ int tc_sunxi_cr_read(struct ufs_hba *hba, u16 reg, u16 *val)
  *
  * Returns 0 on success or non-zero value on failure
  */
-int tc_sunxi_cr_write(struct ufs_hba *hba, u16 reg, u16 val)
+static int tc_sunxi_cr_write(struct ufs_hba *hba, u16 reg, u16 val)
 {
 	struct ufshcd_dme_attr_val data[] = {
 		{ UIC_ARG_MIB(TC_CBC_REG_ADDR_LSB), REG_16_LSB(0),
@@ -809,19 +809,19 @@ out:
 
 
 static int sunxi_ufs_pre_pwr_change(struct ufs_hba *hba,
-				  struct ufs_pa_layer_attr *dev_max_params,
+				  const struct ufs_pa_layer_attr *dev_max_params,
 				  struct ufs_pa_layer_attr *dev_req_params)
 {
-	struct ufs_dev_params host_cap;
+	struct ufs_host_params host_cap;
 	int ret;
 	struct ufs_sunxi_priv *priv = hba->priv;
 
-	ufshcd_init_pwr_dev_param(&host_cap);
+	ufshcd_init_host_params(&host_cap);
 	host_cap.hs_rx_gear = UFS_HS_G4;
 	host_cap.hs_tx_gear = UFS_HS_G4;
 	host_cap.hs_rate = priv->phy_hs_rate;
 
-	ret = ufshcd_get_pwr_dev_param(&host_cap,
+	ret = ufshcd_negotiate_pwr_params(&host_cap,
 				       dev_max_params,
 				       dev_req_params);
 	if (ret) {
@@ -877,7 +877,7 @@ static void ufshcd_print_pwr_info(struct ufs_hba *hba, struct ufs_pa_layer_attr 
 
 static int sunxi_ufs_pwr_change_notify(struct ufs_hba *hba,
 				     enum ufs_notify_change_status stage,
-				     struct ufs_pa_layer_attr *dev_max_params,
+				     const struct ufs_pa_layer_attr *dev_max_params,
 				     struct ufs_pa_layer_attr *dev_req_params)
 {
 	int ret = 0;
@@ -902,12 +902,12 @@ static int sunxi_ufs_pwr_change_notify(struct ufs_hba *hba,
 	return ret;
 }
 
-void sunxi_ufs_register_dump(struct ufs_hba *hba)
+static void sunxi_ufs_register_dump(struct ufs_hba *hba)
 {
 	sunxi_ufs_dump_ccu_reg();
 }
 
-void  sunxi_ufs_hibern8_notify(struct ufs_hba *hba, enum uic_cmd_dme cmd,
+static void sunxi_ufs_hibern8_notify(struct ufs_hba *hba, enum uic_cmd_dme cmd,
 		enum ufs_notify_change_status status)
 {
 	if (status == PRE_CHANGE && cmd == UIC_CMD_DME_HIBER_ENTER) {
@@ -945,7 +945,7 @@ static inline struct scsi_device *sunxi_hba_to_wlun(struct ufs_hba *hba)
 }
 
 #if defined(CONFIG_AW_KERNEL_ORIGIN) && (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 98))
-int  sunxi_ufs_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
+static int sunxi_ufs_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 {
 	int ret = 0;
 	if (pm_op == UFS_SYSTEM_PM) {
@@ -979,7 +979,7 @@ out:
 	return ret;
 }
 #else
-int  sunxi_ufs_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op,
+static int sunxi_ufs_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op,
 					enum ufs_notify_change_status status)
 {
 	int ret = 0;
@@ -1021,7 +1021,7 @@ out:
 }
 #endif
 
-int sunxi_ufs_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
+static int sunxi_ufs_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 {
 	int ret = 0;
 
@@ -1681,7 +1681,7 @@ static int sunxi_ufs_host_top_init(struct ufs_hba *hba)
 	return 0;
 }
 #ifdef SUNXI_UFS_RAW_CCU_SETTING
-void sunxi_ufs_host_exit(struct ufs_hba *hba)
+static void sunxi_ufs_host_exit(struct ufs_hba *hba)
 {
 	u32 reg_val = 0;
 //	int ret = 0;
@@ -1753,7 +1753,7 @@ static int sunxi_ufs_sys_clk_deinit(struct ufs_hba *hba)
 	return 0;
 }
 
-void sunxi_ufs_host_exit(struct ufs_hba *hba)
+static void sunxi_ufs_host_exit(struct ufs_hba *hba)
 {
 	sunxi_ufs_sys_clk_deinit(hba);
 }
@@ -2053,14 +2053,12 @@ static int sunxi_ufs_pltfm_probe(struct platform_device *pdev)
  * @pdev: pointer to platform device structure
  *
  */
-static int sunxi_ufs_pltfm_remove(struct platform_device *pdev)
+static void sunxi_ufs_pltfm_remove(struct platform_device *pdev)
 {
 	struct ufs_hba *hba =  platform_get_drvdata(pdev);
 
 	pm_runtime_get_sync(&(pdev)->dev);
 	ufshcd_remove(hba);
-
-	return 0;
 }
 
 static const struct dev_pm_ops sunxi_ufs_pltfm_pm_ops = {

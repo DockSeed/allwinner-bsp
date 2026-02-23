@@ -151,7 +151,7 @@ static int axp519_battery_power_get(struct axp519_power *charger_power)
 			charger_power->bat_supply_np =  NULL;
 			ret = -1;
 		} else {
-			charger_power->bat_supply = devm_power_supply_get_by_phandle(charger_power->dev,
+			charger_power->bat_supply = devm_power_supply_get_by_reference(charger_power->dev,
 							"det_battery_supply");
 			charger_power->bat_supply_np = np;
 			if (!(charger_power->bat_supply) || (IS_ERR(charger_power->bat_supply))) {
@@ -1008,7 +1008,7 @@ static int axp519_charger_probe(struct platform_device *pdev)
 	/* parse device tree and set register */
 	axp519_charger_parse_device_tree(charger_power);
 
-	psy_cfg.of_node = pdev->dev.of_node;
+	psy_cfg.fwnode = dev_fwnode(&pdev->dev);
 	psy_cfg.drv_data = charger_power;
 
 	charger_power->charger_supply = devm_power_supply_register(charger_power->dev,

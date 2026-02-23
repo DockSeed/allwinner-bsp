@@ -1164,7 +1164,7 @@ static int axp2601_battery_probe(struct platform_device *pdev)
 			PMIC_INFO("no quick charge\n");
 			bat_power->qc_psy =  NULL;
 		} else {
-			bat_power->qc_psy = devm_power_supply_get_by_phandle(bat_power->dev, "det_qc_supply");
+			bat_power->qc_psy = devm_power_supply_get_by_reference(bat_power->dev, "det_qc_supply");
 			PMIC_INFO("used quick charge\n");
 			if (!(bat_power->qc_psy) || (IS_ERR(bat_power->qc_psy)))
 				return -EPROBE_DEFER;
@@ -1182,7 +1182,7 @@ static int axp2601_battery_probe(struct platform_device *pdev)
 				PMIC_INFO("no gpio vbus det\n");
 				bat_power->gpio_vbus_psy =  NULL;
 			} else {
-				bat_power->gpio_vbus_psy = devm_power_supply_get_by_phandle(bat_power->dev, "gpio_vbus_det_supply");
+				bat_power->gpio_vbus_psy = devm_power_supply_get_by_reference(bat_power->dev, "gpio_vbus_det_supply");
 				PMIC_INFO("used gpio vbus det\n");
 				if (!(bat_power->gpio_vbus_psy) || (IS_ERR(bat_power->gpio_vbus_psy)))
 					return -EPROBE_DEFER;
@@ -1207,7 +1207,7 @@ static int axp2601_battery_probe(struct platform_device *pdev)
 		goto err;
 	}
 
-	psy_cfg.of_node = pdev->dev.of_node;
+	psy_cfg.fwnode = dev_fwnode(&pdev->dev);
 	psy_cfg.drv_data = bat_power;
 
 	bat_power->bat_supply = devm_power_supply_register(bat_power->dev,

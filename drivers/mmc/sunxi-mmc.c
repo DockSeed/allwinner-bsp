@@ -2461,7 +2461,7 @@ static int sunxi_mmc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	struct platform_device *pdev = to_platform_device(mmc_dev(mmc));
 
 	if (host->tuning_in_kernel != 1) {
-		SM_ERR(mmc_dev(mmc), "sdc%d :the host don't support tuning in kernel\n", host->phy_index);
+		SM_WARN(mmc_dev(mmc), "sdc%d :the host don't support tuning in kernel\n", host->phy_index);
 		return 0;
 	}
 
@@ -3779,8 +3779,7 @@ static int sunxi_mmc_resource_request(struct sunxi_mmc_host *host,
 	host->card_pwr_gpio = of_get_named_gpio(np, "card-pwr-gpios", 0);
 	if (gpio_is_valid(host->card_pwr_gpio)) {
 		ret =
-		    devm_gpio_request_one(&pdev->dev, host->card_pwr_gpio,
-					  GPIOF_DIR_OUT, "card-pwr-gpios");
+		    devm_gpio_request_one(&pdev->dev, host->card_pwr_gpio, GPIOF_OUT_INIT_LOW, "card-pwr-gpios");
 		if (ret < 0)
 			SM_ERR(&pdev->dev,
 				"could not get  card-pwr-gpios gpio\n");
@@ -4443,7 +4442,7 @@ error_free_host:
 	return ret;
 }
 
-static int sunxi_mmc_remove(struct platform_device *pdev)
+static void sunxi_mmc_remove(struct platform_device *pdev)
 {
 	struct mmc_host *mmc = platform_get_drvdata(pdev);
 	struct sunxi_mmc_host *host = mmc_priv(mmc);
@@ -4481,8 +4480,6 @@ static int sunxi_mmc_remove(struct platform_device *pdev)
 	dma_free_coherent(&pdev->dev, PAGE_SIZE * host->req_page_count, host->sg_cpu,
 			  host->sg_dma);
 	mmc_free_host(mmc);
-
-	return 0;
 }
 
 static void sunxi_mmc_regs_save(struct sunxi_mmc_host *host)

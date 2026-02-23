@@ -61,6 +61,7 @@ static int asoc_simple_startup(struct snd_pcm_substream *substream)
 
 	if (priv->wait_time)
 		sunxi_adpt_wait_time_conv(substream, priv->wait_time);
+	
 	return 0;
 }
 
@@ -71,8 +72,8 @@ static int asoc_simple_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *codec_dai;
 	struct snd_soc_dai *cpu_dai = sunxi_adpt_rtd_cpu_dai(rtd);
 	struct asoc_simple_priv *priv = snd_soc_card_get_drvdata(rtd->card);
-	struct snd_soc_dai_link *dai_link = simple_priv_to_link(priv, rtd->num);
-	struct simple_dai_props *dai_props = simple_priv_to_props(priv, rtd->num);
+	struct snd_soc_dai_link *dai_link = simple_priv_to_link(priv, rtd->id);
+	struct simple_dai_props *dai_props = simple_priv_to_props(priv, rtd->id);
 	struct asoc_simple_dai *dais = priv->dais;
 	unsigned int mclk = 0;
 	unsigned int cpu_pll_clk;
@@ -659,16 +660,16 @@ static int snd_sunxi_dump_show(void *priv_orig, char *buf, size_t *count)
 	}
 	count_tmp += sprintf(buf + count_tmp, "FMT         -> %s\n", prop);
 	switch (dai_fmt & SND_SOC_DAIFMT_MASTER_MASK) {
-	case SND_SOC_DAIFMT_CBM_CFM:
+	case SND_SOC_DAIFMT_CBP_CFP:
 		snprintf(prop, sizeof(prop), "%s", "CBM_CFM");
 		break;
-	case SND_SOC_DAIFMT_CBS_CFM:
+	case SND_SOC_DAIFMT_CBC_CFP:
 		snprintf(prop, sizeof(prop), "%s", "CBS_CFM");
 		break;
-	case SND_SOC_DAIFMT_CBM_CFS:
+	case SND_SOC_DAIFMT_CBP_CFC:
 		snprintf(prop, sizeof(prop), "%s", "CBM_CFS");
 		break;
-	case SND_SOC_DAIFMT_CBS_CFS:
+	case SND_SOC_DAIFMT_CBC_CFC:
 		snprintf(prop, sizeof(prop), "%s", "CBS_CFS");
 		break;
 	default:
@@ -805,16 +806,16 @@ static int snd_sunxi_dump_store(void *priv_orig, const char *buf, size_t count)
 		dai_fmt_tmp = dai_fmt;
 		dai_fmt &= ~SND_SOC_DAIFMT_MASTER_MASK;
 		if (!strncmp(scanf_str, "CBM_CFM", 7)) {
-			dai_fmt |= SND_SOC_DAIFMT_MASTER_MASK & SND_SOC_DAIFMT_CBM_CFM;
+			dai_fmt |= SND_SOC_DAIFMT_MASTER_MASK & SND_SOC_DAIFMT_CBP_CFP;
 			set_sync = true;
 		} else if (!strncmp(scanf_str, "CBS_CFM", 7)) {
-			dai_fmt |= SND_SOC_DAIFMT_MASTER_MASK & SND_SOC_DAIFMT_CBS_CFM;
+			dai_fmt |= SND_SOC_DAIFMT_MASTER_MASK & SND_SOC_DAIFMT_CBC_CFP;
 			set_sync = true;
 		} else if (!strncmp(scanf_str, "CBM_CFS", 7)) {
-			dai_fmt |= SND_SOC_DAIFMT_MASTER_MASK & SND_SOC_DAIFMT_CBM_CFS;
+			dai_fmt |= SND_SOC_DAIFMT_MASTER_MASK & SND_SOC_DAIFMT_CBP_CFC;
 			set_sync = true;
 		} else if (!strncmp(scanf_str, "CBS_CFS", 7)) {
-			dai_fmt |= SND_SOC_DAIFMT_MASTER_MASK & SND_SOC_DAIFMT_CBS_CFS;
+			dai_fmt |= SND_SOC_DAIFMT_MASTER_MASK & SND_SOC_DAIFMT_CBC_CFC;
 			set_sync = true;
 		} else {
 			dai_fmt = dai_fmt_tmp;
@@ -1037,13 +1038,11 @@ err:
 	return ret;
 }
 
-static int asoc_simple_remove(struct platform_device *pdev)
+static void asoc_simple_remove(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
 
 	SND_LOG_DEBUG("\n");
-
-	return asoc_simple_clean_reference(card);
 }
 
 static const struct of_device_id snd_soc_sunxi_of_match[] = {

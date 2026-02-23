@@ -35,9 +35,8 @@
 #include <linux/reboot.h>
 #include <linux/version.h>
 #include "rtc-sunxi.h"
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(5, 15, 0))
+
 #include <linux/panic_notifier.h>
-#endif
 
 #define LOSC_CTRL_REG			0x00
 #define RTC_DAY_ACCESS(day_access_bit)		BIT(day_access_bit)  /* 1: the DAY setting operation is in progress */
@@ -1484,7 +1483,7 @@ err1:
 	return err;
 }
 
-static int sunxi_rtc_remove(struct platform_device *pdev)
+static void sunxi_rtc_remove(struct platform_device *pdev)
 {
 	struct sunxi_rtc_dev *chip = platform_get_drvdata(pdev);
 	struct device *dev = &pdev->dev;
@@ -1500,8 +1499,6 @@ static int sunxi_rtc_remove(struct platform_device *pdev)
 	clk_disable_unprepare(chip->clk);
 	clk_disable_unprepare(chip->clk_bus);
 	reset_control_assert(chip->reset);
-
-	return 0;
 }
 
 static struct platform_driver sunxi_rtc_driver = {

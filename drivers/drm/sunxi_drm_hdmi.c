@@ -18,6 +18,7 @@
 #include <linux/clk.h>
 #include <linux/reset.h>
 #include <linux/of_device.h>
+#include <linux/of_platform.h>
 #include <linux/of_address.h>
 #include <linux/regulator/consumer.h>
 
@@ -26,15 +27,8 @@
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_simple_kms_helper.h>
 #include <drm/drm_probe_helper.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
-#include <drm/drm_edid.h>
-#endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 19, 0)
-#include <drm/drm_scdc_helper.h>
-#else
 #include <drm/display/drm_scdc_helper.h>
-#endif
 
 #include <sunxi-gpio.h>
 #include <uapi/drm/drm_fourcc.h>
@@ -185,11 +179,7 @@ struct sunxi_hdmi_ctrl_s {
 	u8	drv_edid_dbg_data[SUNXI_HDMI_EDID_LENGTH];
 	u32	drv_edid_dbg_size;
 	struct mutex	drv_edid_lock;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
-	struct edid    *drv_edid_data;
-#else
 	const struct drm_edid *drv_edid_data;
-#endif
 };
 
 struct sunxi_hdmi_cec_s {
@@ -780,9 +770,6 @@ static int _sunxi_drv_hdmi_read_edid(struct sunxi_drm_hdmi *hdmi)
 
 	if (hdmi->hdmi_ctrl.drv_edid_dbg_mode) {
 		hdmi_inf("hdmi drv use debug edid\n");
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
-		hdmi->hdmi_ctrl.drv_edid_data = (struct edid *)&hdmi->hdmi_ctrl.drv_edid_dbg_data;
-#else
 		hdmi->hdmi_ctrl.drv_edid_data = drm_edid_alloc(hdmi->hdmi_ctrl.drv_edid_dbg_data,
 							       hdmi->hdmi_ctrl.drv_edid_dbg_size);
 		if (!drm_edid_valid(hdmi->hdmi_ctrl.drv_edid_data)) {
@@ -792,16 +779,12 @@ static int _sunxi_drv_hdmi_read_edid(struct sunxi_drm_hdmi *hdmi)
 			ret = -1;
 			goto exit;
 		}
-#endif
 		goto edid_parse;
 	}
 
 	hdmi->hdmi_ctrl.drv_edid_data = NULL;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
-	hdmi->hdmi_ctrl.drv_edid_data = drm_get_edid(&hdmi->sdrm.connector, &hdmi->i2c_adap);
-#else
 	hdmi->hdmi_ctrl.drv_edid_data = drm_edid_read_ddc(&hdmi->sdrm.connector, &hdmi->i2c_adap);
-#endif
+
 	if (IS_ERR_OR_NULL(hdmi->hdmi_ctrl.drv_edid_data)) {
 		hdmi_err("hdmi drv i2c read edid failed\n");
 		hdmi->hdmi_ctrl.drv_edid_data = NULL;
@@ -1811,7 +1794,7 @@ static const struct i2c_algorithm sunxi_hdmi_i2cm_algo = {
 
 #define sysfs_store_name(cmd) _sunxi_hdmi_sysfs_##cmd##_store
 #define sysfs_store_func(cmd)                    \
-	ssize_t sysfs_store_name(cmd)(struct device *dev,  \
+	static ssize_t sysfs_store_name(cmd)(struct device *dev,  \
 			struct device_attribute *attr, const char *buf, size_t count)
 
 sysfs_show_func(reg_read)
@@ -2703,11 +2686,7 @@ static int _sunxi_drm_hdmi_get_modes(struct drm_connector *connector)
 		return 0;
 	}
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
-	ret = drm_add_edid_modes(connector, (struct edid *)raw_edid);
-#else
 	ret = drm_edid_connector_add_modes(connector);
-#endif
 
 	hdmi_inf("drm get edid support modes: %d\n", ret);
 	return ret;
@@ -2735,7 +2714,7 @@ use_default:
 }
 
 static enum drm_mode_status _sunxi_drm_hdmi_mode_valid(
-		struct drm_connector *connector, struct drm_display_mode *mode)
+		struct drm_connector *connector, const struct drm_display_mode *mode)
 {
 	struct sunxi_drm_hdmi *hdmi = drm_connector_to_hdmi(connector);
 	int rate = drm_mode_vrefresh(mode);
@@ -3246,11 +3225,10 @@ static int ___sunxi_hdmi_init_i2cm_adap(struct sunxi_drm_hdmi *hdmi)
 	}
 
 	adap->nr    = hdmi->hdmi_ctrl.drv_dts_ddc_index;
-	adap->class = I2C_CLASS_DDC;
 	adap->owner = THIS_MODULE;
 	adap->dev.parent = hdmi->dev;
 	adap->algo = &sunxi_hdmi_i2cm_algo;
-	strlcpy(adap->name, "SUNXI HDMI", sizeof(adap->name));
+	strscpy(adap->name, "SUNXI HDMI", sizeof(adap->name));
 
 	i2c_set_adapdata(adap, hdmi);
 	ret = i2c_add_numbered_adapter(adap);
@@ -3523,7 +3501,7 @@ static int sunxi_hdmi_bind(struct device *dev, struct device *master, void *data
 		hdmi_trace("hdmi init start hpd detect task\n");
 	}
 
-	hdmi_inf("hdmi devices bind done <<<<<<<<<<\n\n");
+	hdmi_inf("hdmi devices bind done <<<<<<<<<<\n");
 	return 0;
 
 bind_ng:
@@ -3608,7 +3586,7 @@ static void sunxi_hdmi_unbind(struct device *dev, struct device *master, void *d
 
 	ret = _sunxi_hdmi_deinit_sysfs(dev);
 	if (ret != 0)
-		hdmi_wrn("hdmi dev exit failed\n\n");
+		hdmi_wrn("hdmi dev exit failed\n");
 
 	ret = _sunxi_hdmi_deinit_drv(dev);
 	if (ret != 0)
@@ -3637,7 +3615,7 @@ static int sunxi_hdmi_probe(struct platform_device *pdev)
 	return component_add(dev, &sunxi_hdmi_compoent_ops);
 }
 
-static int sunxi_hdmi_remove(struct platform_device *pdev)
+static void sunxi_hdmi_remove(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 
@@ -3645,7 +3623,6 @@ static int sunxi_hdmi_remove(struct platform_device *pdev)
 
 	pm_runtime_put_sync(dev);
 	pm_runtime_disable(dev);
-	return 0;
 }
 
 struct platform_driver sunxi_hdmi_platform_driver = {
