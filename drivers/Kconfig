@@ -24,7 +24,6 @@ source "$(BSP_TOP)drivers/mtd/Kconfig"
 source "$(BSP_TOP)drivers/redeposit/Kconfig"
 
 # Graphics
-source "$(BSP_TOP)drivers/video/Kconfig"
 source "$(BSP_TOP)drivers/di/Kconfig"
 source "$(BSP_TOP)drivers/vin/Kconfig"
 source "$(BSP_TOP)drivers/vfe/Kconfig"

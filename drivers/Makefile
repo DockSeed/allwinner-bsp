@@ -21,7 +21,6 @@ obj-y += mtd/
 obj-y += redeposit/
 
 # Graphics
-obj-y += video/
 obj-y += di/
 obj-y += vin/
 obj-y += vfe/
