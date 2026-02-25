@@ -834,8 +834,9 @@ static int ac101_startup(struct snd_pcm_substream *substream, struct snd_soc_dai
     ret = snd_pcm_hw_constraint_list(substream->runtime, 0,
                      SNDRV_PCM_HW_PARAM_RATE,
                      &ac101_rate_constraints);
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+	}
 
 	if (!atomic_read(&pdata->working)) {
 		/* save reg */

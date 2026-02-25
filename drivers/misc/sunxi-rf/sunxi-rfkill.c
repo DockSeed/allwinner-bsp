@@ -94,11 +94,7 @@ static int rfkill_probe(struct platform_device *pdev)
 	struct device_node *np = pdev->dev.of_node;
 	struct device *dev = &pdev->dev;
 	struct sunxi_rfkill_platdata *data;
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(6, 2, 0))
-	enum of_gpio_flags config;
-#else
 	u32 config = 0;
-#endif
 	char *pctrl_name = PINCTRL_STATE_DEFAULT;
 	struct pinctrl_state *pctrl_state = NULL;
 	int ret = 0;
@@ -126,63 +122,39 @@ static int rfkill_probe(struct platform_device *pdev)
 		}
 	}
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 	data->gpio_chip_en = of_get_named_gpio(np, "chip_en", 0);
-#else
-	data->gpio_chip_en = of_get_named_gpio_flags(np, "chip_en", 0, &config);
-#endif
 	if (!gpio_is_valid(data->gpio_chip_en)) {
 		dev_err(dev, "get gpio chip_en failed\n");
 	} else {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 		of_property_read_u32_index(np, "chip_en", 3, &config);
 		data->gpio_chip_en_assert = (config == GPIO_ACTIVE_LOW) ? 0 : 1;
-#else
-		data->gpio_chip_en_assert = (config == OF_GPIO_ACTIVE_LOW) ? 0 : 1;
-#endif
 		dev_info(dev, "chip_en gpio=%d assert=%d\n", data->gpio_chip_en, data->gpio_chip_en_assert);
 
-		ret = devm_gpio_request(dev, data->gpio_chip_en, "chip_en");
+		ret = devm_gpio_request_one(
+			dev, data->gpio_chip_en, 
+			data->gpio_chip_en_assert ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH, 
+			"chip_en");
 		if (ret < 0) {
 			dev_err(dev, "can't request chip_en gpio %d\n",
 				data->gpio_chip_en);
 			return ret;
 		}
-
-		ret = gpio_direction_output(data->gpio_chip_en, !data->gpio_chip_en_assert);
-		if (ret < 0) {
-			dev_err(dev, "can't request output direction chip_en gpio %d\n",
-				data->gpio_chip_en);
-			return ret;
-		}
 	}
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 	data->gpio_power_en = of_get_named_gpio(np, "power_en", 0);
-#else
-	data->gpio_power_en = of_get_named_gpio_flags(np, "power_en", 0, &config);
-#endif
 	if (!gpio_is_valid(data->gpio_power_en)) {
 		dev_err(dev, "get gpio power_en failed\n");
 	} else {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 		of_property_read_u32_index(np, "power_en", 3, &config);
 		data->gpio_power_en_assert = (config == GPIO_ACTIVE_LOW) ? 0 : 1;
-#else
-		data->gpio_power_en_assert = (config == OF_GPIO_ACTIVE_LOW) ? 0 : 1;
-#endif
 		dev_info(dev, "power_en gpio=%d assert=%d\n", data->gpio_power_en, data->gpio_power_en_assert);
 
-		ret = devm_gpio_request(dev, data->gpio_power_en, "power_en");
+		ret = devm_gpio_request_one(
+			dev, data->gpio_power_en, 
+			data->gpio_power_en ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH, 
+			"power_en");
 		if (ret < 0) {
 			dev_err(dev, "can't request power_en gpio %d\n",
-				data->gpio_power_en);
-			return ret;
-		}
-
-		ret = gpio_direction_output(data->gpio_power_en, !data->gpio_power_en);
-		if (ret < 0) {
-			dev_err(dev, "can't request output direction power_en gpio %d\n",
 				data->gpio_power_en);
 			return ret;
 		}

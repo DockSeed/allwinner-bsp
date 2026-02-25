@@ -210,11 +210,7 @@ int sunxi_gnss_init(struct platform_device *pdev)
 	struct device_node *np = of_find_matching_node(pdev->dev.of_node, sunxi_gnss_ids);
 	struct device *dev = &pdev->dev;
 	struct sunxi_gnss_platdata *data;
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(6, 2, 0))
-	enum of_gpio_flags config;
-#else
 	u32 config = 0;
-#endif
 	int ret = 0;
 	int count, i;
 
@@ -263,66 +259,43 @@ int sunxi_gnss_init(struct platform_device *pdev)
 		dev_info(dev, "gnss power[%d] (%s)\n", i, data->power_name[i]);
 	}
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 	data->gpio_gnss_regon = of_get_named_gpio(np, "gnss_regon", 0);
-#else
-	data->gpio_gnss_regon = of_get_named_gpio_flags(np, "gnss_regon", 0, &config);
-#endif
 	if (!gpio_is_valid(data->gpio_gnss_regon)) {
 		dev_err(dev, "get gpio gnss_regon failed\n");
 	} else {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 		of_property_read_u32_index(np, "gnss_regon", 3, &config);
 		data->gpio_gnss_regon_assert = (config == GPIO_ACTIVE_LOW) ? 0 : 1;
-#else
-		data->gpio_gnss_regon_assert = (config == OF_GPIO_ACTIVE_LOW) ? 0 : 1;
-#endif
 		dev_info(dev, "gnss_regon gpio=%d assert=%d\n", data->gpio_gnss_regon, data->gpio_gnss_regon_assert);
 
-		ret = devm_gpio_request(dev, data->gpio_gnss_regon,
-				"gnss_regon");
+		ret = devm_gpio_request_one(
+			dev, data->gpio_gnss_regon, 
+			data->gpio_gnss_regon_assert ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH, 
+			"gnss_regon");
 		if (ret < 0) {
 			dev_err(dev, "can't request gnss_regon gpio %d\n",
 				data->gpio_gnss_regon);
 			return ret;
 		}
-
-		ret = gpio_direction_output(data->gpio_gnss_regon, !data->gpio_gnss_regon_assert);
-		if (ret < 0) {
-			dev_err(dev, "can't request output direction gnss_regon gpio %d\n",
-				data->gpio_gnss_regon);
-			return ret;
-		}
 	}
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
+
 	data->gpio_gnss_rst = of_get_named_gpio(np, "gnss_rst", 0);
-#else
-	data->gpio_gnss_rst = of_get_named_gpio_flags(np, "gnss_rst", 0, &config);
-#endif
 	if (!gpio_is_valid(data->gpio_gnss_rst)) {
 		dev_err(dev, "get gpio gnss_rst failed\n");
 	} else {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 		of_property_read_u32_index(np, "gnss_rst", 3, &config);
 		data->gpio_gnss_rst_assert = (config == GPIO_ACTIVE_LOW) ? 0 : 1;
-#else
-		data->gpio_gnss_rst_assert = (config == OF_GPIO_ACTIVE_LOW) ? 0 : 1;
-#endif
 		dev_info(dev, "gnss_rst gpio=%d assert=%d\n", data->gpio_gnss_rst, data->gpio_gnss_rst_assert);
 
-		ret = devm_gpio_request(dev, data->gpio_gnss_rst, "gnss_rst");
+		ret = devm_gpio_request_one(
+			dev, data->gpio_gnss_rst, 
+			data->gpio_gnss_rst_assert ? GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW, 
+			"gnss_rst");
 		if (ret < 0) {
 			dev_err(dev, "can't request gnss_rst gpio %d\n",
 				data->gpio_gnss_rst);
 			return ret;
 		}
 
-		ret = gpio_direction_output(data->gpio_gnss_rst, data->gpio_gnss_rst_assert);
-		if (ret < 0) {
-			dev_err(dev, "can't request output direction gnss_rst gpio %d\n",
-				data->gpio_gnss_rst);
-			return ret;
-		}
 		gpio_set_value(data->gpio_gnss_rst, data->gpio_gnss_rst_assert);
 	}
 

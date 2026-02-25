@@ -623,7 +623,7 @@ static inline notrace u64 __period_to_cycle(enum nsi_pmu port,
 	return period * (__rate_for_master(port) / 1000000);
 }
 
-ssize_t __nsi_pmu_timer_store_v2(unsigned long period)
+static ssize_t __nsi_pmu_timer_store_v2(unsigned long period)
 {
 	int port;
 	unsigned long flags;
@@ -708,7 +708,7 @@ ssize_t __nsi_pmu_timer_store_v2(unsigned long period)
 	return 0;
 }
 
-ssize_t nsi_pmu_timer_store(struct device *dev,
+static ssize_t nsi_pmu_timer_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -740,10 +740,11 @@ ssize_t nsi_pmu_timer_store(struct device *dev,
 		/* set pmu period expect cpu */
 		cycle = period * (mrate / 1000000);
 #if defined(AW_NSI_CPU_CHANNEL) && defined(NSI_HARDCODED_PORT_MAPPING)
-		for (port = 0; port < MBUS_PMU_IAG_MAX; port++) {
+		for (port = 0; port < MBUS_PMU_IAG_MAX; port++) 
 #else
-		for (port = 1; port < MBUS_PMU_IAG_MAX; port++) {
+		for (port = 1; port < MBUS_PMU_IAG_MAX; port++)
 #endif
+		{
 			writel_relaxed(cycle, sunxi_nsi.base + MBUS_PMU_CYCLE(port));
 
 			/* disabled the pmu count */

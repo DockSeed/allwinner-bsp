@@ -268,11 +268,7 @@ int sunxi_wlan_init(struct platform_device *pdev)
 	struct device_node *np = of_find_matching_node(pdev->dev.of_node, sunxi_wlan_ids);
 	struct device *dev = &pdev->dev;
 	struct sunxi_wlan_platdata *data;
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(6, 2, 0))
-	enum of_gpio_flags config;
-#else
 	u32 config = 0;
-#endif
 	u32 val;
 	int ret = 0;
 	int count, i;
@@ -362,66 +358,36 @@ int sunxi_wlan_init(struct platform_device *pdev)
 		}
 	}
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 	data->gpio_wlan_regon = of_get_named_gpio(np, "wlan_regon", 0);
-#else
-	data->gpio_wlan_regon = of_get_named_gpio_flags(np, "wlan_regon", 0, &config);
-#endif
 	if (!gpio_is_valid(data->gpio_wlan_regon)) {
 		dev_err(dev, "get gpio wlan_regon failed\n");
 	} else {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 		of_property_read_u32_index(np, "wlan_regon", 3, &config);
 		data->gpio_wlan_regon_assert = (config == GPIO_ACTIVE_LOW) ? 0 : 1;
-#else
-		data->gpio_wlan_regon_assert = (config == OF_GPIO_ACTIVE_LOW) ? 0 : 1;
-#endif
 		dev_info(dev, "wlan_regon gpio=%d assert=%d\n", data->gpio_wlan_regon, data->gpio_wlan_regon_assert);
 
-		ret = devm_gpio_request(dev, data->gpio_wlan_regon,
-				"wlan_regon");
+		ret = devm_gpio_request_one(
+			dev, data->gpio_wlan_regon, 
+			data->gpio_wlan_regon_assert ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH, 
+			"wlan_regon");
 		if (ret < 0) {
 			dev_err(dev, "can't request wlan_regon gpio %d\n",
 				data->gpio_wlan_regon);
 			return ret;
 		}
-
-		ret = gpio_direction_output(data->gpio_wlan_regon, !data->gpio_wlan_regon_assert);
-		if (ret < 0) {
-			dev_err(dev, "can't request output direction wlan_regon gpio %d\n",
-				data->gpio_wlan_regon);
-			return ret;
-		}
 	}
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 	data->gpio_wlan_hostwake = of_get_named_gpio(np, "wlan_hostwake", 0);
-#else
-	data->gpio_wlan_hostwake = of_get_named_gpio_flags(np, "wlan_hostwake", 0, &config);
-#endif
 	if (!gpio_is_valid(data->gpio_wlan_hostwake)) {
 		dev_err(dev, "get gpio wlan_hostwake failed\n");
 	} else {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 		of_property_read_u32_index(np, "wlan_hostwake", 3, &config);
 		data->gpio_wlan_hostwake_assert = (config == GPIO_ACTIVE_LOW) ? 0 : 1;
-#else
-		data->gpio_wlan_hostwake_assert = (config == OF_GPIO_ACTIVE_LOW) ? 0 : 1;
-#endif
 		dev_info(dev, "wlan_hostwake gpio=%d assert=%d\n", data->gpio_wlan_hostwake, data->gpio_wlan_hostwake_assert);
 
-		ret = devm_gpio_request(dev, data->gpio_wlan_hostwake,
-				"wlan_hostwake");
+		ret = devm_gpio_request_one(dev, data->gpio_wlan_hostwake, GPIOF_IN, "wlan_hostwake");
 		if (ret < 0) {
 			dev_err(dev, "can't request wlan_hostwake gpio %d\n",
-				data->gpio_wlan_hostwake);
-			return ret;
-		}
-
-		ret = gpio_direction_input(data->gpio_wlan_hostwake);
-		if (ret < 0) {
-			dev_err(dev,
-				"can't request input direction wlan_hostwake gpio %d\n",
 				data->gpio_wlan_hostwake);
 			return ret;
 		}

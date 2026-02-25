@@ -165,11 +165,7 @@ int sunxi_modem_init(struct platform_device *pdev)
 	struct device_node *np = of_find_matching_node(pdev->dev.of_node, sunxi_modem_ids);
 	struct device *dev = &pdev->dev;
 	struct sunxi_modem_platdata *data;
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(6, 2, 0))
-	enum of_gpio_flags config;
-#else
 	u32 config = 0;
-#endif
 	int ret = 0;
 	int count, i;
 
@@ -218,35 +214,24 @@ int sunxi_modem_init(struct platform_device *pdev)
 		dev_info(dev, "modem power[%d] (%s)\n", i, data->power_name[i]);
 	}
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 	data->gpio_modem_rst = of_get_named_gpio(np, "modem_rst", 0);
-#else
-	data->gpio_modem_rst = of_get_named_gpio_flags(np, "modem_rst", 0, &config);
-#endif
 	if (!gpio_is_valid(data->gpio_modem_rst)) {
 		dev_err(dev, "get gpio modem_rst failed\n");
 	} else {
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 2, 0))
 		of_property_read_u32_index(np, "modem_rst", 3, &config);
 		data->gpio_modem_rst_assert = (config == GPIO_ACTIVE_LOW) ? 0 : 1;
-#else
-		data->gpio_modem_rst_assert = (config == OF_GPIO_ACTIVE_LOW) ? 0 : 1;
-#endif
 		dev_info(dev, "modem_rst gpio=%d assert=%d\n", data->gpio_modem_rst, data->gpio_modem_rst_assert);
 
-		ret = devm_gpio_request(dev, data->gpio_modem_rst, "modem_rst");
+		ret = devm_gpio_request_one(
+			dev, data->gpio_modem_rst, 
+			data->gpio_modem_rst_assert ? GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW, 
+			"modem_rst");
 		if (ret < 0) {
 			dev_err(dev, "can't request modem_rst gpio %d\n",
 				data->gpio_modem_rst);
 			return ret;
 		}
 
-		ret = gpio_direction_output(data->gpio_modem_rst, data->gpio_modem_rst_assert);
-		if (ret < 0) {
-			dev_err(dev, "can't request output direction modem_rst gpio %d\n",
-				data->gpio_modem_rst);
-			return ret;
-		}
 		gpio_set_value(data->gpio_modem_rst, data->gpio_modem_rst_assert);
 	}
 

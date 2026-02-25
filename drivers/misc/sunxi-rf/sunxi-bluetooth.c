@@ -209,11 +209,7 @@ int sunxi_bt_init(struct platform_device *pdev)
 	struct device_node *np = of_find_matching_node(pdev->dev.of_node, sunxi_bt_ids);
 	struct device *dev = &pdev->dev;
 	struct sunxi_bt_platdata *data;
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(6, 2, 0))
-	enum of_gpio_flags config;
-#else
 	u32 config = 0;
-#endif
 	int ret = 0;
 	int count, i;
 
@@ -293,16 +289,12 @@ int sunxi_bt_init(struct platform_device *pdev)
 
 		dev_info(dev, "bt_rst gpio=%d assert=%d\n", data->gpio_bt_rst, data->gpio_bt_rst_assert);
 
-		ret = devm_gpio_request(dev, data->gpio_bt_rst, "bt_rst");
+		ret = devm_gpio_request_one(
+			dev, data->gpio_bt_rst, 
+			data->gpio_bt_rst_assert ? GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW, 
+			"bt_rst");
 		if (ret < 0) {
 			dev_err(dev, "can't request bt_rst gpio %d\n",
-				data->gpio_bt_rst);
-			return ret;
-		}
-
-		ret = gpio_direction_output(data->gpio_bt_rst, data->gpio_bt_rst_assert);
-		if (ret < 0) {
-			dev_err(dev, "can't request output direction bt_rst gpio %d\n",
 				data->gpio_bt_rst);
 			return ret;
 		}
