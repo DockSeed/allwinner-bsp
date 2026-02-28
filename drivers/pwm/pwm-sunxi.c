@@ -39,14 +39,6 @@
 #include <linux/regulator/consumer.h>
 #include <linux/spinlock.h>
 #include "pwm-sunxi.h"
-#ifdef CONFIG_AW_AMP_SYS_RSC_MANAGER
-#include <linux/sunxi_amp_rsc.h>
-#endif
-
-#if IS_ENABLED(CONFIG_ARCH_SUN55IW6)
-#include <linux/ktime.h>
-#include <linux/completion.h>
-#endif
 
 #define PWM_NUM_MAX 16
 #define PWM_NODE_MAX 8
@@ -94,15 +86,6 @@ static u32 pwm_pm_regs_offset[] = {
 	PWM_CER,
 };
 
-
-#if IS_ENABLED(CONFIG_ARCH_SUN55IW6)
-struct cap_timer_info {
-	struct hrtimer timer;
-	struct pwm_device *pwm;
-	unsigned int pulse_num;
-};
-#endif
-
 struct sunxi_pwm_config {
 	unsigned int dead_time;
 	unsigned int bind_pwm;
@@ -140,19 +123,13 @@ struct sunxi_pwm_hw_data {
 
 struct sunxi_pwm_chip {
 	struct sunxi_pwm_hw_data *data;
-	struct platform_device *pdev;
 	u32 *regs_backup;
 	u32 *pm_regs_offset;
 	int irq;
 	int index;
 	int pwm_num; /* the number of this PWM controller among all PWM controllers on this SoC */
 	wait_queue_head_t wait;
-#if IS_ENABLED(CONFIG_ARCH_SUN55IW6)
-	struct completion timer_completion;
-	struct cap_timer_info cap_timer;
-#endif
 	unsigned long cap_time[3];
-	struct pwm_chip pwm_chip;
 	void __iomem *base;
 	struct sunxi_pwm_config *config;
 	struct group_pwm_config *group_config;
@@ -165,7 +142,6 @@ struct sunxi_pwm_chip {
 	unsigned int group_polarity;
 	unsigned int group_period;
 	struct pinctrl *pctl;
-	unsigned int cells_num;
 	bool status;
 	bool channel_polarity_flag[PWM_NUM_MAX]; /* init set pwm polarity flag  */
 	bool resume_polarity_flag[PWM_NUM_MAX]; /* resmue set pwm polarity flag */
@@ -176,9 +152,6 @@ struct sunxi_pwm_chip {
 	u32 ccr_regs_backup[PWM_CHAN_NUM];
 	u32 pcntr_regs_backup[PWM_CHAN_NUM];
 	spinlock_t lock;
-#ifdef CONFIG_AW_AMP_SYS_RSC_MANAGER
-	sunxi_amp_rsc_t amp_rsc;
-#endif
 };
 
 static struct sunxi_pwm_hw_data sunxi_pwm_v100_data = {
@@ -391,86 +364,88 @@ static u32 sunxi_pwm_pre_scal[][2] = {
 
 int success_probe[8] = {0};
 
-static inline void sunxi_pwm_save_regs(struct sunxi_pwm_chip *chip)
+static inline struct sunxi_pwm_chip *to_sunxi_pwm_chip(struct pwm_chip *chip)
+{
+	return pwmchip_get_drvdata(chip);
+}
+
+static inline void sunxi_pwm_save_regs(struct pwm_chip *chip)
 {
 	int i;
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
 
 	for (i = 0; i < ARRAY_SIZE(pwm_pm_regs_offset); i++)
-		chip->pm_regs_backup[i] = readl(chip->base + pwm_pm_regs_offset[i]);
+		sunxi_pwm->pm_regs_backup[i] = readl(sunxi_pwm->base + pwm_pm_regs_offset[i]);
 
 	for (i = 0; i < PWM_CHAN_NUM; i++) {
-		chip->pcr_regs_backup[i] = readl(chip->base + PWM_PCR + chip->data->pwm_reg_uniform_offset * i);
-		chip->ppr_regs_backup[i] = readl(chip->base + PWM_PPR + chip->data->pwm_reg_uniform_offset * i);
-		chip->ccr_regs_backup[i] = readl(chip->base + PWM_CCR_BASE + chip->data->pwm_reg_uniform_offset * i);
-		chip->pcntr_regs_backup[i] = readl(chip->base + PWM_PCNTR + chip->data->pwm_reg_uniform_offset * i);
+		sunxi_pwm->pcr_regs_backup[i] = readl(sunxi_pwm->base + PWM_PCR + sunxi_pwm->data->pwm_reg_uniform_offset * i);
+		sunxi_pwm->ppr_regs_backup[i] = readl(sunxi_pwm->base + PWM_PPR + sunxi_pwm->data->pwm_reg_uniform_offset * i);
+		sunxi_pwm->ccr_regs_backup[i] = readl(sunxi_pwm->base + PWM_CCR_BASE + sunxi_pwm->data->pwm_reg_uniform_offset * i);
+		sunxi_pwm->pcntr_regs_backup[i] = readl(sunxi_pwm->base + PWM_PCNTR + sunxi_pwm->data->pwm_reg_uniform_offset * i);
 	}
 
 }
 
-static inline void sunxi_pwm_restore_regs(struct sunxi_pwm_chip *chip)
+static inline void sunxi_pwm_restore_regs(struct pwm_chip *chip)
 {
 	int i;
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
 
 	for (i = 0; i < ARRAY_SIZE(pwm_pm_regs_offset); i++)
-		writel(chip->pm_regs_backup[i], chip->base + pwm_pm_regs_offset[i]);
+		writel(sunxi_pwm->pm_regs_backup[i], sunxi_pwm->base + pwm_pm_regs_offset[i]);
 
 	for (i = 0; i < PWM_CHAN_NUM; i++) {
-		writel(chip->pcr_regs_backup[i], chip->base + PWM_PCR + chip->data->pwm_reg_uniform_offset * i);
-		writel(chip->ppr_regs_backup[i], chip->base + PWM_PPR + chip->data->pwm_reg_uniform_offset * i);
-		writel(chip->ccr_regs_backup[i], chip->base + PWM_CCR_BASE + chip->data->pwm_reg_uniform_offset * i);
-		writel(chip->pcntr_regs_backup[i], chip->base + PWM_PCNTR + chip->data->pwm_reg_uniform_offset * i);
+		writel(sunxi_pwm->pcr_regs_backup[i], sunxi_pwm->base + PWM_PCR + sunxi_pwm->data->pwm_reg_uniform_offset * i);
+		writel(sunxi_pwm->ppr_regs_backup[i], sunxi_pwm->base + PWM_PPR + sunxi_pwm->data->pwm_reg_uniform_offset * i);
+		writel(sunxi_pwm->ccr_regs_backup[i], sunxi_pwm->base + PWM_CCR_BASE + sunxi_pwm->data->pwm_reg_uniform_offset * i);
+		writel(sunxi_pwm->pcntr_regs_backup[i], sunxi_pwm->base + PWM_PCNTR + sunxi_pwm->data->pwm_reg_uniform_offset * i);
 	}
 }
 
-static inline struct sunxi_pwm_chip *to_sunxi_pwm_chip(struct pwm_chip *pwm_chip)
-{
-	return container_of(pwm_chip, struct sunxi_pwm_chip, pwm_chip);
-}
-
-static u32 sunxi_pwm_readl(struct pwm_chip *pwm_chip, u32 offset)
+static u32 sunxi_pwm_readl(struct pwm_chip *chip, u32 offset)
 {
 	u32 value;
-	struct sunxi_pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
+	sunxi_pwm = to_sunxi_pwm_chip(chip);
 
-	value = readl(chip->base + offset);
-	sunxi_debug(chip->pwm_chip.dev, "%3u bytes fifo\n", value);
+	value = readl(sunxi_pwm->base + offset);
+	sunxi_debug(&chip->dev, "%3u bytes fifo\n", value);
 
 	return value;
 }
 
-static u32 sunxi_pwm_writel(struct pwm_chip *pwm_chip, u32 offset, u32 value)
+static u32 sunxi_pwm_writel(struct pwm_chip *chip, u32 offset, u32 value)
 {
-	struct sunxi_pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
+	sunxi_pwm = to_sunxi_pwm_chip(chip);
 
-	writel(value, chip->base + offset);
+	writel(value, sunxi_pwm->base + offset);
 
 	return 0;
 }
 
-static void sunxi_pwm_set_reg(struct pwm_chip *pwm_chip, u32 reg_offset,
+static void sunxi_pwm_set_reg(struct pwm_chip *chip, u32 reg_offset,
 				u32 reg_shift, u32 reg_width, int data)
 {
 	u32 value;
 
-	value = sunxi_pwm_readl(pwm_chip, reg_offset);
+	value = sunxi_pwm_readl(chip, reg_offset);
 	value = SET_BITS(reg_shift, reg_width, value, data);
-	sunxi_pwm_writel(pwm_chip, reg_offset, value);
+	sunxi_pwm_writel(chip, reg_offset, value);
 
 	return;
 
 }
 
-static int sunxi_pwm_regulator_request(struct sunxi_pwm_chip *chip, struct device *dev, int index)
+static int sunxi_pwm_regulator_request(struct sunxi_pwm_chip *sunxi_pwm, struct device *dev, int index)
 {
-	if (chip->regulator[index])
+	if (sunxi_pwm->regulator[index])
 		return 0;
 
-	chip->regulator[index] = regulator_get(dev, "pwm");
-	if (IS_ERR(chip->regulator[index])) {
+	sunxi_pwm->regulator[index] = regulator_get(dev, "pwm");
+	if (IS_ERR(sunxi_pwm->regulator[index])) {
 		sunxi_err(dev, "get supply failed!\n");
 		return -EPROBE_DEFER;
 	}
@@ -478,42 +453,45 @@ static int sunxi_pwm_regulator_request(struct sunxi_pwm_chip *chip, struct devic
 	return 0;
 }
 
-static int sunxi_pwm_regulator_release(struct sunxi_pwm_chip *chip)
+static int sunxi_pwm_regulator_release(struct pwm_chip *chip)
 {
 	unsigned int pwm_number, i;
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
 
-	pwm_number = chip->pwm_chip.npwm;
+	pwm_number = chip->npwm;
 	for (i = 0; i < pwm_number; i++) {
-		if (!chip->regulator[i])
+		if (!sunxi_pwm->regulator[i])
 			continue;
 
-		regulator_put(chip->regulator[i]);
-		chip->regulator[i] = NULL;
+		regulator_put(sunxi_pwm->regulator[i]);
+		sunxi_pwm->regulator[i] = NULL;
 	}
 
 	return 0;
 }
 
-static int sunxi_pwm_regulator_enable(struct sunxi_pwm_chip *chip, int index)
+static int sunxi_pwm_regulator_enable(struct pwm_chip *chip, int index)
 {
-	if (!chip->regulator[index])
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
+
+	if (!sunxi_pwm->regulator[index])
 		return 0;
 
-	if (regulator_enable(chip->regulator[index])) {
-		sunxi_err(chip->pwm_chip.dev, "enable regulator failed!\n");
+	if (regulator_enable(sunxi_pwm->regulator[index])) {
+		sunxi_err(&chip->dev, "enable regulator failed!\n");
 		return -EINVAL;
 	}
 
 	return 0;
 }
 
-static int sunxi_pwm_regulator_disable(struct sunxi_pwm_chip *chip, int index)
+static int sunxi_pwm_regulator_disable(struct sunxi_pwm_chip *sunxi_pwm, int index)
 {
-	if (!chip->regulator[index])
+	if (!sunxi_pwm->regulator[index])
 		return 0;
 
-	if (regulator_is_enabled(chip->regulator[index]))
-		regulator_disable(chip->regulator[index]);
+	if (regulator_is_enabled(sunxi_pwm->regulator[index]))
+		regulator_disable(sunxi_pwm->regulator[index]);
 
 	return 0;
 }
@@ -590,30 +568,30 @@ static int sunxi_pwm_get_config(struct platform_device *pdev,
 	return err;
 }
 
-static int sunxi_pwm_set_polarity(struct pwm_chip *pwm_chip, struct pwm_device *pwm,
+static int sunxi_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
 				enum pwm_polarity polarity)
 {
 	int bind_num, mode_num, i;
 	u32 temp[2], index[2] = {0};
-	struct sunxi_pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm;
 	unsigned int reg_offset[2], reg_shift, reg_width;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
+	sunxi_pwm = to_sunxi_pwm_chip(chip);
 	index[0] = pwm->hwpwm;
 	reg_shift = PWM_ACT_STA_SHIFT;
 	reg_width = PWM_ACT_STA_WIDTH;
 
-	bind_num = chip->config[pwm->hwpwm].bind_pwm;
+	bind_num = sunxi_pwm->config[pwm->hwpwm].bind_pwm;
 	if (bind_num == SUNXI_PWM_BIND_DEFAULT) {
 		mode_num = SUNXI_PWM_SINGLE;
 	} else {
 		mode_num = SUNXI_PWM_DUAL;
-		index[1] = bind_num - pwm_chip->base;
+		index[1] = pwm->hwpwm;
 	}
 
 	for (i = 0; i < mode_num; i++) {
-		reg_offset[i] = chip->data->pcr_base_offset + index[i] * chip->data->pwm_reg_uniform_offset;
-		temp[i] = sunxi_pwm_readl(pwm_chip, reg_offset[i]);
+		reg_offset[i] = sunxi_pwm->data->pcr_base_offset + index[i] * sunxi_pwm->data->pwm_reg_uniform_offset;
+		temp[i] = sunxi_pwm_readl(chip, reg_offset[i]);
 	}
 
 	/*
@@ -621,7 +599,7 @@ static int sunxi_pwm_set_polarity(struct pwm_chip *pwm_chip, struct pwm_device *
 	 * bind pwm's polarity is reverse compare with the current pwm
 	 */
 
-	spin_lock(&chip->lock);
+	spin_lock(&sunxi_pwm->lock);
 
 	if (polarity == PWM_POLARITY_NORMAL)
 		temp[0] = SET_BITS(reg_shift, reg_width, temp[0], SUNXI_PWM_NORMAL);
@@ -638,27 +616,27 @@ static int sunxi_pwm_set_polarity(struct pwm_chip *pwm_chip, struct pwm_device *
 
 	/* config register at the same time */
 	for (i = 0; i < mode_num; i++)
-		sunxi_pwm_writel(pwm_chip, reg_offset[i], temp[i]);
+		sunxi_pwm_writel(chip, reg_offset[i], temp[i]);
 
-	spin_unlock(&chip->lock);
+	spin_unlock(&sunxi_pwm->lock);
 
 	return 0;
 }
 
-static int get_pdzcr_reg_offset(struct sunxi_pwm_chip *chip, u32 sel, u32 *reg_offset)
+static int get_pdzcr_reg_offset(struct sunxi_pwm_chip *sunxi_pwm, u32 sel, u32 *reg_offset)
 {
 	switch (sel) {
 	case 0:
 	case 1:
-		*reg_offset = chip->data->pdzcr01_offset;
+		*reg_offset = sunxi_pwm->data->pdzcr01_offset;
 		break;
 	case 2:
 	case 3:
-		*reg_offset = chip->data->pdzcr23_offset;
+		*reg_offset = sunxi_pwm->data->pdzcr23_offset;
 		break;
 	case 4:
 	case 5:
-		*reg_offset = chip->data->pdzcr45_offset;
+		*reg_offset = sunxi_pwm->data->pdzcr45_offset;
 		break;
 	case 6:
 	case 7:
@@ -693,10 +671,10 @@ static int get_pdzcr_reg_offset(struct sunxi_pwm_chip *chip, u32 sel, u32 *reg_o
 * c == -EINVAL: period of input errors
 * c > 0: get the clock source
 */
-static long sunxi_pwm_config_clk(struct pwm_chip *pwm_chip, struct pwm_device *pwm_device,
+static long sunxi_pwm_config_clk(struct pwm_chip *chip, struct pwm_device *pwm_device,
 					int duty_ns, int period_ns, int mode_num)
 {
-	struct sunxi_pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm;
 	int src_clk_sel, i, bind_num;
 	bool clk_bypass_osc24m;
 	unsigned int index[2] = {0};
@@ -704,52 +682,52 @@ static long sunxi_pwm_config_clk(struct pwm_chip *pwm_chip, struct pwm_device *p
 	unsigned long long clk = 0;
 	unsigned long flags;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
+	sunxi_pwm = to_sunxi_pwm_chip(chip);
 
-	bind_num = chip->config[pwm_device->hwpwm].bind_pwm;
-	clk_bypass_osc24m = chip->config[pwm_device->hwpwm].clk_bypass_osc24m;
+	bind_num = sunxi_pwm->config[pwm_device->hwpwm].bind_pwm;
+	clk_bypass_osc24m = sunxi_pwm->config[pwm_device->hwpwm].clk_bypass_osc24m;
 	index[0] = pwm_device->hwpwm;
 	reg_offset[0] = sunxi_pwm_regs[index[0] >> 0x1];
 
 	if (mode_num == SUNXI_PWM_DUAL) {
-		index[1] = bind_num - pwm_chip->base;
+		index[1] = pwm_device->hwpwm;
 		reg_offset[1] = sunxi_pwm_regs[index[1] >> 0x1];
 	}
 
 	if (clk_bypass_osc24m) {
 		/* if set osc bypass, then direct output 24M clock, set by pass */
-		clk = chip->data->has_hosc_clock ? clk_get_rate(chip->hosc) : SUNXI_CLK_24M;
+		clk = sunxi_pwm->data->has_hosc_clock ? clk_get_rate(sunxi_pwm->hosc) : SUNXI_CLK_24M;
 		src_clk_sel = 0;
-		if (!chip->data->clk_gating_separate) {
+		if (!sunxi_pwm->data->clk_gating_separate) {
 			if ((index[0] % 2) == 0)
 				reg_bypass_shift = PWM_BYPASS_SHIFT;
 			else
 				reg_bypass_shift = PWM_BYPASS_SHIFT + 1;
-			sunxi_pwm_set_reg(pwm_chip, reg_offset[0], reg_bypass_shift, PWM_BYPASS_WIDTH, 1);
+			sunxi_pwm_set_reg(chip, reg_offset[0], reg_bypass_shift, PWM_BYPASS_WIDTH, 1);
 		} else {
 			reg_bypass_shift = index[0] + PWM_CGR_BYPASS_SHIFT;
-			sunxi_pwm_set_reg(pwm_chip, PWM_PCGR, reg_bypass_shift, PWM_BYPASS_WIDTH, 1);
+			sunxi_pwm_set_reg(chip, PWM_PCGR, reg_bypass_shift, PWM_BYPASS_WIDTH, 1);
 		}
 	} else if (period_ns > 0 && period_ns <= 10) {
 		/* if freq lt 100M, then direct output 100M clock,set by pass */
 		src_clk_sel = 1;
-		spin_lock_irqsave(&chip->lock, flags);
+		spin_lock_irqsave(&sunxi_pwm->lock, flags);
 		for (i = 0; i < mode_num; i++) {
 			/* config the two pwm bypass */
-			if (!chip->data->clk_gating_separate) {
+			if (!sunxi_pwm->data->clk_gating_separate) {
 				if ((index[i] % 2) == 0)
 					reg_bypass_shift = PWM_BYPASS_SHIFT;
 				else
 					reg_bypass_shift = PWM_BYPASS_SHIFT + 1;
-				sunxi_pwm_set_reg(pwm_chip, reg_offset[i], reg_bypass_shift, PWM_BYPASS_WIDTH, 1);
+				sunxi_pwm_set_reg(chip, reg_offset[i], reg_bypass_shift, PWM_BYPASS_WIDTH, 1);
 			} else {
 				reg_bypass_shift = index[i] + PWM_CGR_BYPASS_SHIFT;
-				sunxi_pwm_set_reg(pwm_chip, PWM_PCGR, reg_bypass_shift, PWM_BYPASS_WIDTH, 1);
+				sunxi_pwm_set_reg(chip, PWM_PCGR, reg_bypass_shift, PWM_BYPASS_WIDTH, 1);
 			}
 			/* config the two pwm clock source as clk_src1 */
-			sunxi_pwm_set_reg(pwm_chip, reg_offset[i], PWM_CLK_SRC_SHIFT, PWM_CLK_SRC_WIDTH, src_clk_sel);
+			sunxi_pwm_set_reg(chip, reg_offset[i], PWM_CLK_SRC_SHIFT, PWM_CLK_SRC_WIDTH, src_clk_sel);
 		}
-		spin_unlock_irqrestore(&chip->lock, flags);
+		spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 
 		return 0;
 	} else if (period_ns > 10 && period_ns <= 334) {
@@ -758,111 +736,24 @@ static long sunxi_pwm_config_clk(struct pwm_chip *pwm_chip, struct pwm_device *p
 		src_clk_sel = 1;
 	} else if (period_ns > 334) {
 		/* if freq < 3M, then select 24M/40M clock */
-		clk = chip->data->has_hosc_clock ? \
-		clk_get_rate(chip->hosc) \
+		clk = sunxi_pwm->data->has_hosc_clock ? \
+		clk_get_rate(sunxi_pwm->hosc) \
 		: SUNXI_CLK_24M;
 		src_clk_sel = 0;
 	} else {
-		sunxi_err(pwm_chip->dev, "The frequency range should be between 0HZ and 100MHZ\n");
+		sunxi_err(&chip->dev, "The frequency range should be between 0HZ and 100MHZ\n");
 		return -EINVAL;
 	}
 
 	for (i = 0; i < mode_num; i++) {
 		reg_offset[i] = sunxi_pwm_regs[index[i] >> 0x1];
-		sunxi_pwm_set_reg(pwm_chip, reg_offset[i], PWM_CLK_SRC_SHIFT, PWM_CLK_SRC_WIDTH, src_clk_sel);
+		sunxi_pwm_set_reg(chip, reg_offset[i], PWM_CLK_SRC_SHIFT, PWM_CLK_SRC_WIDTH, src_clk_sel);
 	}
 
 	return clk;
 }
 
-static ssize_t sunxi_pwm_group_period_show(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	struct sunxi_pwm_chip *chip = dev_get_drvdata(dev);
-
-	return scnprintf(buf, PAGE_SIZE, "%u\n", chip->group_period);
-
-}
-
-static ssize_t sunxi_pwm_group_period_store(struct device *dev, struct device_attribute *attr,
-				const char *buf, size_t count)
-{
-	int err;
-	u32 min;
-	unsigned long val;
-	struct sunxi_pwm_chip *chip = dev_get_drvdata(dev);
-
-	min = SUNXI_PWM_GROUP_PERIOD_MIN;
-
-	err = kstrtoul(buf, 10, &val);
-	if (err)
-		goto err_out;
-
-	if (val < min)
-		goto err_out;
-
-	chip->group_period = val;
-
-	return count;
-
-err_out:
-	sunxi_err(chip->pwm_chip.dev, "invalid parameter, group_polarity min val is %u!\n", min);
-
-	return -EINVAL;
-}
-
-static ssize_t sunxi_pwm_group_polarity_show(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	struct sunxi_pwm_chip *chip = dev_get_drvdata(dev);
-
-	return scnprintf(buf, PAGE_SIZE, "%u\n", chip->group_polarity);
-
-}
-
-static ssize_t sunxi_pwm_group_polarity_store(struct device *dev, struct device_attribute *attr,
-				const char *buf, size_t count)
-{
-	int err;
-	unsigned long val;
-	struct sunxi_pwm_chip *chip = dev_get_drvdata(dev);
-
-	err = kstrtoul(buf, 10, &val);
-	if (err)
-		goto err_out;
-
-	if ((val != SUNXI_PWM_NORMAL) && (val != SUNXI_PWM_INVERSED))
-		goto err_out;
-
-	chip->group_polarity = val;
-
-	return count;
-
-err_out:
-	sunxi_err(chip->pwm_chip.dev, "invalid parameter!\n");
-
-	return -EINVAL;
-}
-
-static struct device_attribute sunxi_pwm_debug_attr[] = {
-	__ATTR(group_period, S_IRUGO | S_IWUSR, sunxi_pwm_group_period_show, sunxi_pwm_group_period_store),
-	__ATTR(group_polarity, S_IRUGO | S_IWUSR, sunxi_pwm_group_polarity_show, sunxi_pwm_group_polarity_store),
-};
-
-static void sunxi_pwm_create_sysfs(struct platform_device *pdev)
-{
-	u32 i;
-	for (i = 0; i < ARRAY_SIZE(sunxi_pwm_debug_attr); i++)
-		device_create_file(&pdev->dev, &sunxi_pwm_debug_attr[i]);
-}
-
-static void sunxi_pwm_remove_sysfs(struct platform_device *pdev)
-{
-	u32 i;
-
-	for (i = 0; i < ARRAY_SIZE(sunxi_pwm_debug_attr); i++)
-		device_remove_file(&pdev->dev, &sunxi_pwm_debug_attr[i]);
-}
-
-static int sunxi_pwm_config_single(struct pwm_chip *pwm_chip, struct pwm_device *pwm_device,
+static int sunxi_pwm_config_single(struct pwm_chip *chip, struct pwm_device *pwm_device,
 		int duty_ns, int period_ns, int group_channel, int group_run_count)
 {
 	unsigned int temp;
@@ -871,44 +762,37 @@ static int sunxi_pwm_config_single(struct pwm_chip *pwm_chip, struct pwm_device 
 	unsigned int reg_offset;
 	unsigned int pre_scal_id = 0, div_m = 0, prescale = 0;
 	unsigned int pwm_run_count = 0, value;
-	struct sunxi_pwm_chip *chip;
-	struct group_pwm_config *pdevice;
+	struct sunxi_pwm_chip *sunxi_pwm;
 	u32 sel = 0;
 	unsigned long flags;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
-	pdevice = pwm_device->chip_data;
+	sunxi_pwm = to_sunxi_pwm_chip(chip);
 
-	if (pwm_device->chip_data) {
-		pwm_run_count = pdevice->group_run_count;
-		chip->group_ch = pdevice->group_channel;
-		chip->group_polarity = pdevice->pwm_polarity;
-		chip->group_period = pdevice->pwm_period;
-	} else if (group_channel) {
-		chip->group_ch = group_channel;
+	if (group_channel) {
+		sunxi_pwm->group_ch = group_channel;
 		pwm_run_count = group_run_count;
 	}
 
-	if (chip->group_ch) {
-		spin_lock_irqsave(&chip->lock, flags);
-		reg_offset = chip->data->per_offset;
-		value = sunxi_pwm_readl(pwm_chip, reg_offset);
-		value &= ~((0xf) << 4*(chip->group_ch - 1));
-		sunxi_pwm_writel(pwm_chip, reg_offset, value);
-		spin_unlock_irqrestore(&chip->lock, flags);
+	if (sunxi_pwm->group_ch) {
+		spin_lock_irqsave(&sunxi_pwm->lock, flags);
+		reg_offset = sunxi_pwm->data->per_offset;
+		value = sunxi_pwm_readl(chip, reg_offset);
+		value &= ~((0xf) << 4*(sunxi_pwm->group_ch - 1));
+		sunxi_pwm_writel(chip, reg_offset, value);
+		spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 	}
 
 	sel = pwm_device->hwpwm;
 
 	/* sel / 2 * 0x04 + 0x20  */
 	reg_offset = sunxi_pwm_regs[sel >> 0x1];
-	sunxi_pwm_writel(pwm_chip, reg_offset, 0);
+	sunxi_pwm_writel(chip, reg_offset, 0);
 
-	if (chip->group_ch) {
+	if (sunxi_pwm->group_ch) {
 		/* group_mode used the apb1 clk */
-		sunxi_pwm_set_reg(pwm_chip, reg_offset, PWM_CLK_SRC_SHIFT, PWM_CLK_SRC_WIDTH, 0);
+		sunxi_pwm_set_reg(chip, reg_offset, PWM_CLK_SRC_SHIFT, PWM_CLK_SRC_WIDTH, 0);
 	} else {
-		c = sunxi_pwm_config_clk(pwm_chip, pwm_device, duty_ns, period_ns, SUNXI_PWM_SINGLE);
+		c = sunxi_pwm_config_clk(chip, pwm_device, duty_ns, period_ns, SUNXI_PWM_SINGLE);
 		if (c <= 0) {
 			/*  c = 0 || c == -EINVAL */
 			return c;
@@ -942,58 +826,58 @@ static int sunxi_pwm_config_single(struct pwm_chip *pwm_chip, struct pwm_device 
 	}
 
 	/* config clk div_m */
-	temp = sunxi_pwm_readl(pwm_chip, reg_offset);
-	if (chip->group_ch)
+	temp = sunxi_pwm_readl(chip, reg_offset);
+	if (sunxi_pwm->group_ch)
 		temp = SET_BITS(PWM_DIV_M_SHIFT, PWM_DIV_M_WIDTH, temp, 0);
 	else
 		temp = SET_BITS(PWM_DIV_M_SHIFT, PWM_DIV_M_WIDTH, temp, div_m);
-	sunxi_pwm_writel(pwm_chip, reg_offset, temp);
+	sunxi_pwm_writel(chip, reg_offset, temp);
 
 	/* config prescal_k */
-	reg_offset = chip->data->pcr_base_offset + chip->data->pwm_reg_uniform_offset * sel;
-	temp = sunxi_pwm_readl(pwm_chip, reg_offset);
+	reg_offset = sunxi_pwm->data->pcr_base_offset + sunxi_pwm->data->pwm_reg_uniform_offset * sel;
+	temp = sunxi_pwm_readl(chip, reg_offset);
 
-	if (chip->group_ch)
+	if (sunxi_pwm->group_ch)
 		temp = SET_BITS(PWM_PRESCAL_SHIFT, PWM_PRESCAL_WIDTH, temp, 0xef);
 	else
 		temp = SET_BITS(PWM_PRESCAL_SHIFT, PWM_PRESCAL_WIDTH, temp, prescale);
-	sunxi_pwm_writel(pwm_chip, reg_offset, temp);
+	sunxi_pwm_writel(chip, reg_offset, temp);
 
-	if (chip->group_ch) {
+	if (sunxi_pwm->group_ch) {
 		/* group set enable */
-		reg_offset = PWM_PGR0 + 0x04 * (chip->group_ch - 1);
-		sunxi_pwm_set_reg(pwm_chip, reg_offset, sel, 1, 1);
+		reg_offset = PWM_PGR0 + 0x04 * (sunxi_pwm->group_ch - 1);
+		sunxi_pwm_set_reg(chip, reg_offset, sel, 1, 1);
 
 		/* pwm pulse mode set */
-		reg_offset = chip->data->pcr_base_offset + sel * chip->data->pwm_reg_uniform_offset;
-		temp = sunxi_pwm_readl(pwm_chip, reg_offset);
+		reg_offset = sunxi_pwm->data->pcr_base_offset + sel * sunxi_pwm->data->pwm_reg_uniform_offset;
+		temp = sunxi_pwm_readl(chip, reg_offset);
 		temp = SET_BITS(PWM_MODE_ACTS_SHIFT, PWM_MODE_ACTS_WIDTH, temp, 0x3); /* pwm pulse mode and active */
 		/* pwm output pulse num */
 		temp = SET_BITS(PWM_PUL_NUM_SHIFT, PWM_PUL_NUM_WIDTH, temp, pwm_run_count);   /* pwm output pulse num */
-		sunxi_pwm_writel(pwm_chip, reg_offset, temp);
+		sunxi_pwm_writel(chip, reg_offset, temp);
 	}
 
 	/* config active cycles num and period cycles num */
-	reg_offset = chip->data->ppr_base_offset + chip->data->pwm_reg_uniform_offset * sel;
-	temp = sunxi_pwm_readl(pwm_chip, reg_offset);
-	if (chip->group_ch) {
+	reg_offset = sunxi_pwm->data->ppr_base_offset + sunxi_pwm->data->pwm_reg_uniform_offset * sel;
+	temp = sunxi_pwm_readl(chip, reg_offset);
+	if (sunxi_pwm->group_ch) {
 		temp = SET_BITS(PWM_ACT_CYCLES_SHIFT, PWM_ACT_CYCLES_WIDTH, temp,
-				(unsigned int)((chip->group_period * 3) >> 3));
-		temp = SET_BITS(PWM_PERIOD_CYCLES_SHIFT, PWM_PERIOD_CYCLES_WIDTH, temp, chip->group_period);
-		chip->group_ch = 0;
+				(unsigned int)((sunxi_pwm->group_period * 3) >> 3));
+		temp = SET_BITS(PWM_PERIOD_CYCLES_SHIFT, PWM_PERIOD_CYCLES_WIDTH, temp, sunxi_pwm->group_period);
+		sunxi_pwm->group_ch = 0;
 	} else {
 		temp = SET_BITS(PWM_ACT_CYCLES_SHIFT, PWM_ACT_CYCLES_WIDTH, temp, active_cycles);
 		temp = SET_BITS(PWM_PERIOD_CYCLES_SHIFT, PWM_PERIOD_CYCLES_WIDTH, temp, (entire_cycles - 1));
 	}
 
-	sunxi_pwm_writel(pwm_chip, reg_offset, temp);
-	sunxi_debug(chip->pwm_chip.dev, "active_cycles=%lu entire_cycles=%lu prescale=%u div_m=%u\n",
+	sunxi_pwm_writel(chip, reg_offset, temp);
+	sunxi_debug(&chip->dev, "active_cycles=%lu entire_cycles=%lu prescale=%u div_m=%u\n",
 			active_cycles, entire_cycles, prescale, div_m);
 
 	return 0;
 }
 
-static int sunxi_pwm_config_dual(struct pwm_chip *pwm_chip, struct pwm_device *pwm_device,
+static int sunxi_pwm_config_dual(struct pwm_chip *chip, struct pwm_device *pwm_device,
 		int duty_ns, int period_ns, int bind_num)
 {
 	unsigned int temp;
@@ -1006,33 +890,33 @@ static int sunxi_pwm_config_dual(struct pwm_chip *pwm_chip, struct pwm_device *p
 	int i = 0;
 	int err;
 	unsigned int dead_time = 0, duty = 0;
-	struct sunxi_pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
+	sunxi_pwm = to_sunxi_pwm_chip(chip);
 
 	pwm_index[0] = pwm_device->hwpwm;
-	pwm_index[1] = bind_num - pwm_chip->base;
+	pwm_index[1] = pwm_device->hwpwm;
 
 	if (pwm_index[1] < 0) {
-		sunxi_err(chip->pwm_chip.dev, "pwm channel invalid\n");
+		sunxi_err(&chip->dev, "pwm channel invalid\n");
 		return -EINVAL;
 	}
 
-	dead_time = chip->config[pwm_index[0]].dead_time;
+	dead_time = sunxi_pwm->config[pwm_index[0]].dead_time;
 	duty = (unsigned int)duty_ns;
 	/* judge if the pwm eanble dead zone */
-	err = get_pdzcr_reg_offset(chip, pwm_index[0], &reg_dz_en_offset[0]);
+	err = get_pdzcr_reg_offset(sunxi_pwm, pwm_index[0], &reg_dz_en_offset[0]);
 	if (err) {
-		sunxi_err(chip->pwm_chip.dev, "get pwm dead zone failed\n");
+		sunxi_err(&chip->dev, "get pwm dead zone failed\n");
 		return -EINVAL;
 	}
 
-	sunxi_pwm_set_reg(pwm_chip, reg_dz_en_offset[0], PWM_DZ_EN_SHIFT, PWM_DZ_EN_WIDTH, 1);
-	temp = sunxi_pwm_readl(pwm_chip, reg_dz_en_offset[0]);
+	sunxi_pwm_set_reg(chip, reg_dz_en_offset[0], PWM_DZ_EN_SHIFT, PWM_DZ_EN_WIDTH, 1);
+	temp = sunxi_pwm_readl(chip, reg_dz_en_offset[0]);
 	temp &=  (1u << PWM_DZ_EN_SHIFT);
 	/* if enable pwm dead zone failed, it is wrong */
 	if (temp == 0) {
-		sunxi_err(chip->pwm_chip.dev, "[pwm]dead zone error.\n");
+		sunxi_err(&chip->dev, "[pwm]dead zone error.\n");
 		return -EINVAL;
 	}
 
@@ -1040,10 +924,10 @@ static int sunxi_pwm_config_dual(struct pwm_chip *pwm_chip, struct pwm_device *p
 	/* and if duty time is zero, it may not be configured, set to ten times the dead time  */
 	if (duty < dead_time) {
 		if (duty) {
-			sunxi_err(chip->pwm_chip.dev, "[PWM]duty time error\n");
+			sunxi_err(&chip->dev, "[PWM]duty time error\n");
 			return -EINVAL;
 		}
-		sunxi_warn(chip->pwm_chip.dev, "duty is not configured, set to ten times the dead time\n");
+		sunxi_warn(&chip->dev, "duty is not configured, set to ten times the dead time\n");
 		duty_ns = dead_time * 10;
 		if (duty_ns > period_ns)
 			duty_ns = period_ns;
@@ -1051,10 +935,10 @@ static int sunxi_pwm_config_dual(struct pwm_chip *pwm_chip, struct pwm_device *p
 
 	for (i = 0; i < PWM_BIND_NUM; i++) {
 		reg_offset[i] = sunxi_pwm_regs[pwm_index[i] >> 0x1];
-		sunxi_pwm_writel(pwm_chip, reg_offset[i], 0);
+		sunxi_pwm_writel(chip, reg_offset[i], 0);
 	}
 
-	clk = sunxi_pwm_config_clk(pwm_chip, pwm_device, duty_ns, period_ns, SUNXI_PWM_DUAL);
+	clk = sunxi_pwm_config_clk(chip, pwm_device, duty_ns, period_ns, SUNXI_PWM_DUAL);
 	if (!clk || clk == -EINVAL)
 		return clk;
 	c = clk;
@@ -1089,56 +973,56 @@ static int sunxi_pwm_config_dual(struct pwm_chip *pwm_chip, struct pwm_device *p
 
 	/* config  clk div_m */
 	for (i = 0; i < PWM_BIND_NUM; i++)
-		sunxi_pwm_set_reg(pwm_chip, reg_offset[i], PWM_DIV_M_SHIFT, PWM_DIV_M_SHIFT, div_m);
+		sunxi_pwm_set_reg(chip, reg_offset[i], PWM_DIV_M_SHIFT, PWM_DIV_M_SHIFT, div_m);
 
 	/* config prescal */
 	for (i = 0; i < PWM_BIND_NUM; i++) {
-		reg_offset[i] = chip->data->pcr_base_offset + chip->data->pwm_reg_uniform_offset * pwm_index[i];
-		sunxi_pwm_set_reg(pwm_chip, reg_offset[i], PWM_PRESCAL_SHIFT, PWM_PRESCAL_WIDTH, prescale);
+		reg_offset[i] = sunxi_pwm->data->pcr_base_offset + sunxi_pwm->data->pwm_reg_uniform_offset * pwm_index[i];
+		sunxi_pwm_set_reg(chip, reg_offset[i], PWM_PRESCAL_SHIFT, PWM_PRESCAL_WIDTH, prescale);
 	}
 
 	/* config active cycles and period cycles */
 	for (i = 0; i < PWM_BIND_NUM; i++) {
-		reg_offset[i] = chip->data->ppr_base_offset + chip->data->pwm_reg_uniform_offset * pwm_index[i];
-		temp = sunxi_pwm_readl(pwm_chip, reg_offset[i]);
+		reg_offset[i] = sunxi_pwm->data->ppr_base_offset + sunxi_pwm->data->pwm_reg_uniform_offset * pwm_index[i];
+		temp = sunxi_pwm_readl(chip, reg_offset[i]);
 		temp = SET_BITS(PWM_ACT_CYCLES_SHIFT, PWM_ACT_CYCLES_WIDTH, temp, active_cycles);
 		temp = SET_BITS(PWM_PERIOD_CYCLES_SHIFT, PWM_PERIOD_CYCLES_WIDTH, temp, (entire_cycles - 1));
 
-		sunxi_pwm_writel(pwm_chip, reg_offset[i], temp);
+		sunxi_pwm_writel(chip, reg_offset[i], temp);
 	}
 
-	sunxi_debug(chip->pwm_chip.dev, "active_cycles=%lu entire_cycles=%lu prescale=%u div_m=%u\n",
+	sunxi_debug(&chip->dev, "active_cycles=%lu entire_cycles=%lu prescale=%u div_m=%u\n",
 			active_cycles, entire_cycles, prescale, div_m);
 
 	/* config dead zone, one config for two pwm */
 	reg_offset[0] = reg_dz_en_offset[0];
-	sunxi_pwm_set_reg(pwm_chip, reg_offset[0], PWM_PDZINTV_SHIFT, PWM_PDZINTV_WIDTH, (unsigned int)reg_dead);
+	sunxi_pwm_set_reg(chip, reg_offset[0], PWM_PDZINTV_SHIFT, PWM_PDZINTV_WIDTH, (unsigned int)reg_dead);
 
 	return 0;
 }
 
-static int sunxi_pwm_config_channel(struct pwm_chip *pwm_chip, struct pwm_device *pwm_device,
+static int sunxi_pwm_config_channel(struct pwm_chip *chip, struct pwm_device *pwm_device,
 		int duty_ns, int period_ns)
 {
 	int bind_num, group_channel, group_run_count, ret;
 
-	struct sunxi_pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
+	sunxi_pwm = to_sunxi_pwm_chip(chip);
 
-	bind_num = chip->config[pwm_device->hwpwm].bind_pwm;
-	group_channel = chip->group_config[pwm_device->hwpwm].group_channel;
-	group_run_count = chip->group_config[pwm_device->hwpwm].group_run_count;
+	bind_num = sunxi_pwm->config[pwm_device->hwpwm].bind_pwm;
+	group_channel = sunxi_pwm->group_config[pwm_device->hwpwm].group_channel;
+	group_run_count = sunxi_pwm->group_config[pwm_device->hwpwm].group_run_count;
 
 	if (bind_num == SUNXI_PWM_BIND_DEFAULT)
-		ret = sunxi_pwm_config_single(pwm_chip, pwm_device, duty_ns, period_ns, group_channel, group_run_count);
+		ret = sunxi_pwm_config_single(chip, pwm_device, duty_ns, period_ns, group_channel, group_run_count);
 	else
-		ret = sunxi_pwm_config_dual(pwm_chip, pwm_device, duty_ns, period_ns, bind_num);
+		ret = sunxi_pwm_config_dual(chip, pwm_device, duty_ns, period_ns, bind_num);
 
 	return ret;
 }
 
-static int sunxi_pwm_enable_single(struct pwm_chip *pwm_chip, struct pwm_device *pwm_device, int group_channel, int group_run_count)
+static int sunxi_pwm_enable_single(struct pwm_chip *chip, struct pwm_device *pwm_device, int group_channel, int group_run_count)
 {
 	unsigned int value = 0, index = 0;
 	unsigned int reg_offset, reg_shift, reg_width, group_reg_offset;
@@ -1149,40 +1033,38 @@ static int sunxi_pwm_enable_single(struct pwm_chip *pwm_chip, struct pwm_device 
 	unsigned int pwm_start_count, i;
 	int pwm_period = 0;
 	int err;
-	struct sunxi_pwm_chip *chip;
-	struct group_pwm_config *pdevice;
+	struct sunxi_pwm_chip *sunxi_pwm  = to_sunxi_pwm_chip(chip);
+	struct device *dev = pwmchip_parent(chip);
 	unsigned long flags;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
-	pdevice = pwm_device->chip_data;
 
 	index = pwm_device->hwpwm;
-	sunxi_debug(pwm_chip->dev, "pwm chan %d is enable\n", index);
+	sunxi_debug(&chip->dev, "pwm chan %d is enable\n", index);
 	if (index >= PWM_NUM_MAX) {
-		sunxi_err(pwm_chip->dev, "hardware pwm index more than %d\n", PWM_NUM_MAX);
+		sunxi_err(&chip->dev, "hardware pwm index more than %d\n", PWM_NUM_MAX);
 		return -index;
 	}
 
-	sub_np = of_parse_phandle(pwm_chip->dev->of_node, "sunxi-pwms", index);
+	sub_np = of_parse_phandle(dev->of_node, "sunxi-pwms", index);
 	if (!sub_np) {
-		sunxi_err(chip->pwm_chip.dev, "can't parse \"sunxi-pwms\" property\n");
+		sunxi_err(&chip->dev, "can't parse \"sunxi-pwms\" property\n");
 		return -ENODEV;
 	}
 	pwm_pdevice = of_find_device_by_node(sub_np);
 	if (!pwm_pdevice) {
-		sunxi_err(chip->pwm_chip.dev, "can't parse pwm device\n");
+		sunxi_err(&chip->dev, "can't parse pwm device\n");
 		return -ENODEV;
 	}
 
-	err = sunxi_pwm_regulator_request(chip, &pwm_pdevice->dev, index);
+	err = sunxi_pwm_regulator_request(sunxi_pwm, &pwm_pdevice->dev, index);
 	if (err) {
-		sunxi_err(chip->pwm_chip.dev, "request regulator failed!\n");
+		sunxi_err(&chip->dev, "request regulator failed!\n");
 		return err;
 	}
 
 	err = sunxi_pwm_regulator_enable(chip, index);
 	if (err) {
-		sunxi_err(chip->pwm_chip.dev, "enable regulator failed!\n");
+		sunxi_err(&chip->dev, "enable regulator failed!\n");
 		goto err0;
 	}
 
@@ -1190,18 +1072,15 @@ static int sunxi_pwm_enable_single(struct pwm_chip *pwm_chip, struct pwm_device 
 	if (err != 0)
 		goto err1;
 
-	if (pwm_device->chip_data) {
-		chip->group_ch = pdevice->group_channel;
-		pwm_period = pdevice->pwm_period;
-	} else if (group_channel) {
-		chip->group_ch = group_channel;
+	if (group_channel) {
+		sunxi_pwm->group_ch = group_channel;
 	}
 
-	if (chip->group_ch) {
+	if (sunxi_pwm->group_ch) {
 		enable_num++;
 		/* config clk gating */
-		spin_lock_irqsave(&chip->lock, flags);
-		if (!chip->data->clk_gating_separate) {
+		spin_lock_irqsave(&sunxi_pwm->lock, flags);
+		if (!sunxi_pwm->data->clk_gating_separate) {
 			reg_offset = sunxi_pwm_regs[index >> 0x1];
 			reg_shift = PWM_CLK_GATING_SHIFT;
 			reg_width = PWM_CLK_GATING_WIDTH;
@@ -1210,21 +1089,21 @@ static int sunxi_pwm_enable_single(struct pwm_chip *pwm_chip, struct pwm_device 
 			reg_shift = index;
 			reg_width = 0x1;
 		}
-		value = sunxi_pwm_readl(pwm_chip, reg_offset);
-		value |= ((0xf) << 4*(chip->group_ch - 1));
+		value = sunxi_pwm_readl(chip, reg_offset);
+		value |= ((0xf) << 4*(sunxi_pwm->group_ch - 1));
 		/* value = SET_BITS(reg_shift, reg_width, value, 0); */
-		sunxi_pwm_writel(pwm_chip, reg_offset, value);
-		spin_unlock_irqrestore(&chip->lock, flags);
+		sunxi_pwm_writel(chip, reg_offset, value);
+		spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 	}
 
 	/* enable pwm controller  pwm can be used */
-	if (!chip->group_ch) {
+	if (!sunxi_pwm->group_ch) {
 		/* pwm channel enable */
-		spin_lock_irqsave(&chip->lock, flags);
-		reg_offset = chip->data->per_offset;
-		sunxi_pwm_set_reg(pwm_chip, reg_offset, index, 1, 1);
+		spin_lock_irqsave(&sunxi_pwm->lock, flags);
+		reg_offset = sunxi_pwm->data->per_offset;
+		sunxi_pwm_set_reg(chip, reg_offset, index, 1, 1);
 		/* config clk gating */
-		if (!chip->data->clk_gating_separate) {
+		if (!sunxi_pwm->data->clk_gating_separate) {
 			reg_offset = sunxi_pwm_regs[index >> 0x1];
 			reg_shift = PWM_CLK_GATING_SHIFT;
 			reg_width = PWM_CLK_GATING_WIDTH;
@@ -1233,23 +1112,23 @@ static int sunxi_pwm_enable_single(struct pwm_chip *pwm_chip, struct pwm_device 
 			reg_shift = index;
 			reg_width = 0x1;
 		}
-		sunxi_pwm_set_reg(pwm_chip, reg_offset, reg_shift, reg_width, 1);
-		spin_unlock_irqrestore(&chip->lock, flags);
+		sunxi_pwm_set_reg(chip, reg_offset, reg_shift, reg_width, 1);
+		spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 	}
 
-	if (chip->group_ch && enable_num == 4) {
-		if (chip->group_polarity)
+	if (sunxi_pwm->group_ch && enable_num == 4) {
+		if (sunxi_pwm->group_polarity)
 			pwm_start_count = (unsigned int)pwm_period*6/8;
 		else
 			pwm_start_count = 0;
 
-		for (i = 0; i < chip->pwm_chip.npwm; i++) {
+		for (i = 0; i < chip->npwm; i++) {
 			/* start count set */
-			reg_offset = chip->data->pcntr_base_offset + chip->data->pwm_reg_uniform_offset * i;
+			reg_offset = sunxi_pwm->data->pcntr_base_offset + sunxi_pwm->data->pwm_reg_uniform_offset * i;
 
 			temp = pwm_start_count << PWM_COUNTER_START_SHIFT;
-			sunxi_pwm_writel(pwm_chip, reg_offset, temp);
-			if (chip->group_polarity)
+			sunxi_pwm_writel(chip, reg_offset, temp);
+			if (sunxi_pwm->group_polarity)
 				pwm_start_count = pwm_start_count -
 					((unsigned int)pwm_period*2/8);
 			else
@@ -1258,77 +1137,76 @@ static int sunxi_pwm_enable_single(struct pwm_chip *pwm_chip, struct pwm_device 
 		}
 
 		/* pwm channel enable */
-		spin_lock_irqsave(&chip->lock, flags);
-		reg_offset = chip->data->per_offset;
-		value = sunxi_pwm_readl(pwm_chip, reg_offset);
-		if (index >= chip->pwm_chip.npwm)
-			value |= ((0xf) << 4*(chip->group_ch - 1));
+		spin_lock_irqsave(&sunxi_pwm->lock, flags);
+		reg_offset = sunxi_pwm->data->per_offset;
+		value = sunxi_pwm_readl(chip, reg_offset);
+		if (index >= chip->npwm)
+			value |= ((0xf) << 4*(sunxi_pwm->group_ch - 1));
 		else
 			value |= 0xf;
-		sunxi_pwm_writel(pwm_chip, reg_offset, value);
-		spin_unlock_irqrestore(&chip->lock, flags);
+		sunxi_pwm_writel(chip, reg_offset, value);
+		spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 
-		for (i = 0; i < chip->group_ch; i++) {
+		for (i = 0; i < sunxi_pwm->group_ch; i++) {
 			/* pwm group control */
 			group_reg_offset = PWM_PGR0 + 0x04 * i;
 
 			/* group enable and start */
-			sunxi_pwm_set_reg(pwm_chip, group_reg_offset, PWMG_EN_SHIFT, 1, 1);
-			sunxi_pwm_set_reg(pwm_chip, group_reg_offset, PWMG_START_SHIFT, 1, 1);
+			sunxi_pwm_set_reg(chip, group_reg_offset, PWMG_EN_SHIFT, 1, 1);
+			sunxi_pwm_set_reg(chip, group_reg_offset, PWMG_START_SHIFT, 1, 1);
 		}
 
 		enable_num = 0;
 		pwm_start_count = 0;
-		chip->group_ch = 0;
+		sunxi_pwm->group_ch = 0;
 	}
 
 	return 0;
 
 err1:
-	sunxi_pwm_regulator_disable(chip, index);
+	sunxi_pwm_regulator_disable(sunxi_pwm, index);
 err0:
 	sunxi_pwm_regulator_release(chip);
 	return err;
 }
 
-static int sunxi_pwm_enable_dual(struct pwm_chip *pwm_chip, struct pwm_device *pwm_device, int bind_num)
+static int sunxi_pwm_enable_dual(struct pwm_chip *chip, struct pwm_device *pwm_device, int bind_num)
 {
 	unsigned int reg_offset[2], reg_shift[2], reg_width[2];
 	struct device_node *sub_np[2];
 	struct platform_device *pwm_pdevice[PWM_BIND_NUM];
 	int i, err;
 	unsigned int pwm_index[2] = {0};
-	struct sunxi_pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
+	struct device *dev = pwmchip_parent(chip);
 	unsigned long flags;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
-
 	pwm_index[0] = pwm_device->hwpwm;
-	pwm_index[1] = bind_num - pwm_chip->base;
+	pwm_index[1] = pwm_device->hwpwm;
 
 	/* get current index pwm device */
 	for (i = 0; i < PWM_BIND_NUM; i++) {
-		sub_np[i] = of_parse_phandle(pwm_chip->dev->of_node, "sunxi-pwms", pwm_index[i]);
+		sub_np[i] = of_parse_phandle(dev->of_node, "sunxi-pwms", pwm_index[i]);
 		if (IS_ERR_OR_NULL(sub_np[i])) {
-			sunxi_err(chip->pwm_chip.dev, "can't parse \"sunxi-pwms\" property\n");
+			sunxi_err(&chip->dev, "can't parse \"sunxi-pwms\" property\n");
 			return -ENODEV;
 		}
 		pwm_pdevice[i] = of_find_device_by_node(sub_np[i]);
 		if (IS_ERR_OR_NULL(pwm_pdevice[i])) {
-			sunxi_err(chip->pwm_chip.dev, "can't parse pwm device\n");
+			sunxi_err(&chip->dev, "can't parse pwm device\n");
 			return -ENODEV;
 		}
 	}
 
-	err = sunxi_pwm_regulator_request(chip, &pwm_pdevice[0]->dev, pwm_index[0]);
+	err = sunxi_pwm_regulator_request(sunxi_pwm, &pwm_pdevice[0]->dev, pwm_index[0]);
 	if (err) {
-		sunxi_err(chip->pwm_chip.dev, "request regulator failed!\n");
+		sunxi_err(&chip->dev, "request regulator failed!\n");
 		return err;
 	}
 
 	err = sunxi_pwm_regulator_enable(chip, pwm_index[0]);
 	if (err) {
-		sunxi_err(chip->pwm_chip.dev, "enable regulator failed!\n");
+		sunxi_err(&chip->dev, "enable regulator failed!\n");
 		goto err0;
 	}
 
@@ -1336,15 +1214,15 @@ static int sunxi_pwm_enable_dual(struct pwm_chip *pwm_chip, struct pwm_device *p
 	if (err)
 		goto err1;
 
-	err = sunxi_pwm_regulator_request(chip, &pwm_pdevice[1]->dev, pwm_index[1]);
+	err = sunxi_pwm_regulator_request(sunxi_pwm, &pwm_pdevice[1]->dev, pwm_index[1]);
 	if (err) {
-		sunxi_err(chip->pwm_chip.dev, "request regulator failed!\n");
+		sunxi_err(&chip->dev, "request regulator failed!\n");
 		goto err1;
 	}
 
 	err = sunxi_pwm_regulator_enable(chip, pwm_index[1]);
 	if (err) {
-		sunxi_err(chip->pwm_chip.dev, "enable regulator failed!\n");
+		sunxi_err(&chip->dev, "enable regulator failed!\n");
 		goto err2;
 	}
 
@@ -1354,8 +1232,8 @@ static int sunxi_pwm_enable_dual(struct pwm_chip *pwm_chip, struct pwm_device *p
 
 	/* enable clk gating for pwm controller */
 	for (i = 0; i < PWM_BIND_NUM; i++) {
-		spin_lock_irqsave(&chip->lock, flags);
-		if (!chip->data->clk_gating_separate) {
+		spin_lock_irqsave(&sunxi_pwm->lock, flags);
+		if (!sunxi_pwm->data->clk_gating_separate) {
 			reg_offset[i] = sunxi_pwm_regs[pwm_index[i] >> 0x1];
 			reg_shift[i] = PWM_CLK_GATING_SHIFT;
 			reg_width[i] = PWM_CLK_GATING_WIDTH;
@@ -1364,52 +1242,50 @@ static int sunxi_pwm_enable_dual(struct pwm_chip *pwm_chip, struct pwm_device *p
 			reg_shift[i] = pwm_index[i];
 			reg_width[i] = 0x1;
 		}
-		sunxi_pwm_set_reg(pwm_chip, reg_offset[i], reg_shift[i], reg_width[i], 1);
-		spin_unlock_irqrestore(&chip->lock, flags);
+		sunxi_pwm_set_reg(chip, reg_offset[i], reg_shift[i], reg_width[i], 1);
+		spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 	}
 
 	/* enable pwm controller */
 	for (i = 0; i < PWM_BIND_NUM; i++) {
-		spin_lock_irqsave(&chip->lock, flags);
-		reg_offset[i] = chip->data->per_offset;
-		sunxi_pwm_set_reg(pwm_chip, reg_offset[i], pwm_index[i], 0x1, 1);
-		spin_unlock_irqrestore(&chip->lock, flags);
+		spin_lock_irqsave(&sunxi_pwm->lock, flags);
+		reg_offset[i] = sunxi_pwm->data->per_offset;
+		sunxi_pwm_set_reg(chip, reg_offset[i], pwm_index[i], 0x1, 1);
+		spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 	}
 
 	return 0;
 
 err3:
-	sunxi_pwm_regulator_disable(chip, pwm_index[1]);
+	sunxi_pwm_regulator_disable(sunxi_pwm, pwm_index[1]);
 err2:
 	sunxi_pwm_regulator_release(chip);
 err1:
-	sunxi_pwm_regulator_disable(chip, pwm_index[0]);
+	sunxi_pwm_regulator_disable(sunxi_pwm, pwm_index[0]);
 err0:
 	sunxi_pwm_regulator_release(chip);
 	return err;
 }
 
-static int sunxi_pwm_enable(struct pwm_chip *pwm_chip, struct pwm_device *pwm_device)
+static int sunxi_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm_device)
 {
 	int bind_num, group_channel, group_run_count;
 	int ret;
-	struct sunxi_pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
-
-	bind_num = chip->config[pwm_device->hwpwm].bind_pwm;
-	group_channel = chip->group_config[pwm_device->hwpwm].group_channel;
-	group_run_count = chip->group_config[pwm_device->hwpwm].group_run_count;
+	bind_num = sunxi_pwm->config[pwm_device->hwpwm].bind_pwm;
+	group_channel = sunxi_pwm->group_config[pwm_device->hwpwm].group_channel;
+	group_run_count = sunxi_pwm->group_config[pwm_device->hwpwm].group_run_count;
 
 	if (bind_num == SUNXI_PWM_BIND_DEFAULT)
-		ret = sunxi_pwm_enable_single(pwm_chip, pwm_device, group_channel, group_run_count);
+		ret = sunxi_pwm_enable_single(chip, pwm_device, group_channel, group_run_count);
 	else
-		ret = sunxi_pwm_enable_dual(pwm_chip, pwm_device, bind_num);
+		ret = sunxi_pwm_enable_dual(chip, pwm_device, bind_num);
 
 	return ret;
 }
 
-static void sunxi_pwm_disable_single(struct pwm_chip *pwm_chip, struct pwm_device *pwm_device)
+static void sunxi_pwm_disable_single(struct pwm_chip *chip, struct pwm_device *pwm_device)
 {
 	u32 value = 0, index = 0;
 	unsigned int reg_offset, reg_shift, reg_width, group_reg_offset;
@@ -1417,30 +1293,24 @@ static void sunxi_pwm_disable_single(struct pwm_chip *pwm_chip, struct pwm_devic
 	struct platform_device *pwm_pdevice;
 
 	static int disable_num;
-	struct sunxi_pwm_chip *chip;
-	struct group_pwm_config *pdevice;
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
+	struct device *dev = pwmchip_parent(chip);
 	unsigned long flags;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
-	pdevice = pwm_device->chip_data;
-
 	index = pwm_device->hwpwm;
-	sunxi_debug(pwm_chip->dev, "pwm chan %d is disable\n", index);
-
-	if (pwm_device->chip_data)
-		chip->group_ch = pdevice->group_channel;
+	sunxi_debug(&chip->dev, "pwm chan %d is disable\n", index);
 
 	/* disable pwm controller */
-	if (chip->group_ch) {
+	if (sunxi_pwm->group_ch) {
 		if (disable_num == 0) {
-			spin_lock_irqsave(&chip->lock, flags);
-			reg_offset = chip->data->per_offset;
+			spin_lock_irqsave(&sunxi_pwm->lock, flags);
+			reg_offset = sunxi_pwm->data->per_offset;
 			reg_width = 0x4;
-			value = sunxi_pwm_readl(pwm_chip, reg_offset);
-			value &= ~((0xf) << 4*(chip->group_ch - 1));
-			sunxi_pwm_writel(pwm_chip, reg_offset, value);
+			value = sunxi_pwm_readl(chip, reg_offset);
+			value &= ~((0xf) << 4*(sunxi_pwm->group_ch - 1));
+			sunxi_pwm_writel(chip, reg_offset, value);
 			/* config clk gating */
-			if (!chip->data->clk_gating_separate) {
+			if (!sunxi_pwm->data->clk_gating_separate) {
 				reg_offset = sunxi_pwm_regs[index >> 0x1];
 				reg_shift = PWM_CLK_GATING_SHIFT;
 				reg_width = PWM_CLK_GATING_WIDTH;
@@ -1449,19 +1319,19 @@ static void sunxi_pwm_disable_single(struct pwm_chip *pwm_chip, struct pwm_devic
 				reg_shift = index;
 				reg_width = 0x1;
 			}
-			value = sunxi_pwm_readl(pwm_chip, reg_offset);
-			value &= ~((0xf) << 4*(chip->group_ch - 1));
+			value = sunxi_pwm_readl(chip, reg_offset);
+			value &= ~((0xf) << 4*(sunxi_pwm->group_ch - 1));
 			/* value = SET_BITS(reg_shift, reg_width, value, 0); */
-			sunxi_pwm_writel(pwm_chip, reg_offset, value);
-			spin_unlock_irqrestore(&chip->lock, flags);
+			sunxi_pwm_writel(chip, reg_offset, value);
+			spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 		}
 	} else {
-		spin_lock_irqsave(&chip->lock, flags);
-		reg_offset = chip->data->per_offset;
-		sunxi_pwm_set_reg(pwm_chip, reg_offset, index, 0x1, 0);
+		spin_lock_irqsave(&sunxi_pwm->lock, flags);
+		reg_offset = sunxi_pwm->data->per_offset;
+		sunxi_pwm_set_reg(chip, reg_offset, index, 0x1, 0);
 
 		/* config clk gating */
-		if (!chip->data->clk_gating_separate) {
+		if (!sunxi_pwm->data->clk_gating_separate) {
 			reg_offset = sunxi_pwm_regs[index >> 0x1];
 			reg_shift = PWM_CLK_GATING_SHIFT;
 			reg_width = PWM_CLK_GATING_WIDTH;
@@ -1470,380 +1340,231 @@ static void sunxi_pwm_disable_single(struct pwm_chip *pwm_chip, struct pwm_devic
 			reg_shift = index;
 			reg_width = 0x1;
 		}
-		sunxi_pwm_set_reg(pwm_chip, reg_offset, reg_shift, reg_width, 0);
-		spin_unlock_irqrestore(&chip->lock, flags);
+		sunxi_pwm_set_reg(chip, reg_offset, reg_shift, reg_width, 0);
+		spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 	}
 
-	if (chip->group_ch)
+	if (sunxi_pwm->group_ch)
 		disable_num++;
 
-	sub_np = of_parse_phandle(pwm_chip->dev->of_node, "sunxi-pwms", index);
+	sub_np = of_parse_phandle(dev->of_node, "sunxi-pwms", index);
 	if (IS_ERR_OR_NULL(sub_np)) {
-		sunxi_err(chip->pwm_chip.dev, "can't parse \"sunxi-pwms\" property\n");
+		sunxi_err(&chip->dev, "can't parse \"sunxi-pwms\" property\n");
 		return;
 	}
 	pwm_pdevice = of_find_device_by_node(sub_np);
 	if (IS_ERR_OR_NULL(pwm_pdevice)) {
-		sunxi_err(chip->pwm_chip.dev, "can't parse pwm device\n");
+		sunxi_err(&chip->dev, "can't parse pwm device\n");
 		return;
 	}
 	sunxi_pwm_pin_set_state(&pwm_pdevice->dev, PWM_PIN_STATE_SLEEP);
 
-	sunxi_pwm_regulator_disable(chip, index);
+	sunxi_pwm_regulator_disable(sunxi_pwm, index);
 
-	if (chip->group_ch) {
-		group_reg_offset = PWM_PGR0 + 0x04 * (chip->group_ch - 1);
+	if (sunxi_pwm->group_ch) {
+		group_reg_offset = PWM_PGR0 + 0x04 * (sunxi_pwm->group_ch - 1);
 		/* group end */
-		sunxi_pwm_set_reg(pwm_chip, group_reg_offset, PWMG_START_SHIFT, 1, 0);
+		sunxi_pwm_set_reg(chip, group_reg_offset, PWMG_START_SHIFT, 1, 0);
 
 		/* group disable */
-		sunxi_pwm_set_reg(pwm_chip, group_reg_offset, PWMG_EN_SHIFT, 1, 0);
-		chip->group_ch = 0;
+		sunxi_pwm_set_reg(chip, group_reg_offset, PWMG_EN_SHIFT, 1, 0);
+		sunxi_pwm->group_ch = 0;
 	}
 }
 
-static void sunxi_pwm_disable_dual(struct pwm_chip *pwm_chip, struct pwm_device *pwm_device, int bind_num)
+static void sunxi_pwm_disable_dual(struct pwm_chip *chip, struct pwm_device *pwm_device, int bind_num)
 {
 	unsigned int reg_offset[2], pwm_index[2] = {0};
 	struct device_node *sub_np[2];
 	struct platform_device *pwm_pdevice[2];
 	int i = 0;
 	int err;
-	struct sunxi_pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
+	struct device *dev = pwmchip_parent(chip);
 	unsigned long flags;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
-
 	pwm_index[0] = pwm_device->hwpwm;
-	pwm_index[1] = bind_num - pwm_chip->base;
+	pwm_index[1] = pwm_device->hwpwm;
 
 	/* get current index pwm device */
 	for (i = 0; i < PWM_BIND_NUM; i++) {
-		sub_np[i] = of_parse_phandle(pwm_chip->dev->of_node, "sunxi-pwms", pwm_index[i]);
+		sub_np[i] = of_parse_phandle(dev->of_node, "sunxi-pwms", pwm_index[i]);
 		if (IS_ERR_OR_NULL(sub_np[i])) {
-			sunxi_err(chip->pwm_chip.dev, "can't parse \"sunxi-pwms\" property\n");
+			sunxi_err(&chip->dev, "can't parse \"sunxi-pwms\" property\n");
 			return;
 		}
 		pwm_pdevice[i] = of_find_device_by_node(sub_np[i]);
 		if (IS_ERR_OR_NULL(pwm_pdevice[i])) {
-			sunxi_err(chip->pwm_chip.dev, "can't parse pwm device\n");
+			sunxi_err(&chip->dev, "can't parse pwm device\n");
 			return;
 		}
 	}
 
 	/* disable pwm controller */
 	for (i = 0; i < PWM_BIND_NUM; i++) {
-		spin_lock_irqsave(&chip->lock, flags);
-		reg_offset[i] = chip->data->per_offset;
-		sunxi_pwm_set_reg(pwm_chip, reg_offset[i], pwm_index[i], 0x1, 0);
-		spin_unlock_irqrestore(&chip->lock, flags);
+		spin_lock_irqsave(&sunxi_pwm->lock, flags);
+		reg_offset[i] = sunxi_pwm->data->per_offset;
+		sunxi_pwm_set_reg(chip, reg_offset[i], pwm_index[i], 0x1, 0);
+		spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 	}
 
 	/* disable pwm clk gating */
 	for (i = 0; i < PWM_BIND_NUM; i++) {
 		reg_offset[i] = sunxi_pwm_regs[pwm_index[i] >> 0x1];
-		sunxi_pwm_set_reg(pwm_chip, reg_offset[i], PWM_CLK_GATING_SHIFT, 0x1, 0);
+		sunxi_pwm_set_reg(chip, reg_offset[i], PWM_CLK_GATING_SHIFT, 0x1, 0);
 	}
 
 	/* disable pwm dead zone,one for the two pwm */
-	err = get_pdzcr_reg_offset(chip, pwm_index[0], &reg_offset[0]);
+	err = get_pdzcr_reg_offset(sunxi_pwm, pwm_index[0], &reg_offset[0]);
 	if (err) {
-		sunxi_err(chip->pwm_chip.dev, "get pwm dead zone failed\n");
+		sunxi_err(&chip->dev, "get pwm dead zone failed\n");
 		return;
 	}
 
-	sunxi_pwm_set_reg(pwm_chip, reg_offset[0], PWM_DZ_EN_SHIFT, PWM_DZ_EN_WIDTH, 0);
+	sunxi_pwm_set_reg(chip, reg_offset[0], PWM_DZ_EN_SHIFT, PWM_DZ_EN_WIDTH, 0);
 
 	/* config pin sleep */
 	sunxi_pwm_pin_set_state(&pwm_pdevice[0]->dev, PWM_PIN_STATE_SLEEP);
 
-	sunxi_pwm_regulator_disable(chip, pwm_index[0]);
+	sunxi_pwm_regulator_disable(sunxi_pwm, pwm_index[0]);
 
 	sunxi_pwm_pin_set_state(&pwm_pdevice[1]->dev, PWM_PIN_STATE_SLEEP);
 
-	sunxi_pwm_regulator_disable(chip, pwm_index[1]);
+	sunxi_pwm_regulator_disable(sunxi_pwm, pwm_index[1]);
 }
 
-static void sunxi_pwm_disable(struct pwm_chip *pwm_chip, struct pwm_device *pwm_device)
+static void sunxi_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm_device)
 {
 	int bind_num;
-	struct sunxi_pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
+	sunxi_pwm = to_sunxi_pwm_chip(chip);
 
-	bind_num = chip->config[pwm_device->hwpwm].bind_pwm;
+	bind_num = sunxi_pwm->config[pwm_device->hwpwm].bind_pwm;
 	if (bind_num == SUNXI_PWM_BIND_DEFAULT)
-		sunxi_pwm_disable_single(pwm_chip, pwm_device);
+		sunxi_pwm_disable_single(chip, pwm_device);
 	else
-		sunxi_pwm_disable_dual(pwm_chip, pwm_device, bind_num);
+		sunxi_pwm_disable_dual(chip, pwm_device, bind_num);
 }
-
-#if IS_ENABLED(CONFIG_ARCH_SUN55IW6)
-static void sunxi_pwm_capture_count_enable(struct pwm_device *pwm, int index)
-{
-	struct sunxi_pwm_chip *chip = to_sunxi_pwm_chip(pwm->chip);
-
-	/* starting capture coutner when CAP_CNT*_EN=1 */
-	sunxi_pwm_writel(pwm->chip, PWM_CCR_BASE + index * chip->data->pwm_reg_uniform_offset, PWM_CAPTURE_CRTE |
-		PWM_CAPTURE_CRLF);
-
-	/* raise edge capture and restart counting */
-	sunxi_pwm_writel(pwm->chip, PWM_CCCR + index * chip->data->pwm_reg_uniform_offset, PWM_CAPTURE_CCCSRR);
-
-	/* set cccnr */
-	sunxi_pwm_writel(pwm->chip, PWM_CCCNR + index * chip->data->pwm_reg_uniform_offset, PWM_MAX_CAP_NUM);
-
-	/* enable capture counter inetrrupt */
-	sunxi_pwm_set_reg(pwm->chip, PWM_CCCIER, index, 1, 1);
-
-	/* use capture counter single */
-	/*enable capture counter*/
-	sunxi_pwm_set_reg(pwm->chip, PWM_CCCER, index, 1, 1);
-}
-
-static void sunxi_pwm_capture_count_disable(struct pwm_device *pwm, int index)
-{
-	/* disable capture counter inetrrupt */
-	sunxi_pwm_set_reg(pwm->chip, PWM_CCCIER, index, 1, 0);
-	/* disable capture counter */
-	sunxi_pwm_set_reg(pwm->chip, PWM_CCCER, index, 1, 0);
-}
-
-static enum hrtimer_restart cap_timer_callback(struct hrtimer *timer)
-{
-	struct cap_timer_info *info = container_of(timer, struct cap_timer_info, timer);
-	struct sunxi_pwm_chip *chip = to_sunxi_pwm_chip(info->pwm->chip);
-
-	//get pulse num
-	info->pulse_num = sunxi_pwm_readl(info->pwm->chip, PWM_CCCSR + info->pwm->hwpwm * chip->data->pwm_reg_uniform_offset);
-
-	sunxi_pwm_capture_count_disable(info->pwm, info->pwm->hwpwm);
-
-	complete(&chip->timer_completion);
-
-	return HRTIMER_NORESTART;
-}
-
-int sunxi_pwm_capture_count(struct pwm_device *pwm, unsigned int *pulse_num,
-			unsigned long timeout_ms)
-{
-	struct sunxi_pwm_chip *chip = to_sunxi_pwm_chip(pwm->chip);
-	struct device_node *sub_np;
-	struct platform_device *pwm_pdevice;
-	ktime_t kt_period;
-	int ret, index = pwm->hwpwm;
-	unsigned long secs, nsecs;
-
-	chip->index = 0;
-	sub_np = of_parse_phandle(pwm->chip->dev->of_node, "sunxi-pwms", index);
-	if (IS_ERR_OR_NULL(sub_np)) {
-		sunxi_err(chip->pwm_chip.dev, "can't parse \"pwms\" property\n");
-		return -ENODEV;
-	}
-	pwm_pdevice = of_find_device_by_node(sub_np);
-	if (IS_ERR_OR_NULL(pwm_pdevice)) {
-		sunxi_err(chip->pwm_chip.dev, "can't parse pwm device\n");
-		return -ENODEV;
-	}
-
-	ret = sunxi_pwm_regulator_request(chip, &pwm_pdevice->dev, index);
-	if (ret) {
-		sunxi_err(chip->pwm_chip.dev, "request regulator failed!\n");
-		return ret;
-	}
-
-	ret = sunxi_pwm_regulator_enable(chip, index);
-	if (ret) {
-		sunxi_err(chip->pwm_chip.dev, "enable regulator failed!\n");
-		goto err0;
-	}
-
-	ret = sunxi_pwm_pin_set_state(&pwm_pdevice->dev, PWM_PIN_STATE_ACTIVE);
-	if (ret) {
-		sunxi_err(chip->pwm_chip.dev, "set pinctrl status failed!\n");
-		goto err1;
-	}
-
-	/* enable clk for pwm controller */
-	sunxi_pwm_set_reg(pwm->chip, PWM_PCGR, index, 1, 1);
-
-	sunxi_pwm_capture_count_enable(pwm, index);
-
-	secs = timeout_ms/1000;
-	nsecs = (timeout_ms % 1000) * 1000000;
-	kt_period = ktime_set(secs, nsecs);
-
-	hrtimer_init(&chip->cap_timer.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	chip->cap_timer.timer.function = cap_timer_callback;
-	chip->cap_timer.pwm = pwm;
-
-	sunxi_pwm_capture_count_enable(pwm, index);
-
-	hrtimer_start(&chip->cap_timer.timer, kt_period, HRTIMER_MODE_REL);
-
-	wait_for_completion(&chip->timer_completion);
-	/* get pulse num */
-	*pulse_num = chip->cap_timer.pulse_num;
-
-	sunxi_pwm_capture_count_disable(pwm, index);
-
-	sunxi_pwm_set_reg(pwm->chip, PWM_PCGR, index, 1, 0);
-
-	sunxi_pwm_pin_set_state(&pwm_pdevice->dev, PWM_PIN_STATE_SLEEP);
-
-	sunxi_pwm_regulator_disable(chip, index);
-
-	return 0;
-
-err1:
-	sunxi_pwm_regulator_disable(chip, index);
-err0:
-	sunxi_pwm_regulator_release(chip);
-	return ret;
-
-}
-EXPORT_SYMBOL_GPL(sunxi_pwm_capture_count);
-#endif
 
 /*
  * default:24MHz
  * max input pwm period:2.7ms
  * min input pwm period:2.7us
  */
-static int sunxi_pwm_capture(struct pwm_chip *pwm_chip, struct pwm_device *pwm,
+static int sunxi_pwm_capture(struct pwm_chip *chip, struct pwm_device *pwm,
 			struct pwm_capture *result, unsigned long timeout)
 {
-	struct sunxi_pwm_chip *chip = to_sunxi_pwm_chip(pwm_chip);
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
 	unsigned long long pwm_clk = 0, temp_clk;
 	struct device_node *sub_np;
 	unsigned int reg_offset, pwm_div, reg_val;
 	struct platform_device *pwm_pdevice;
-#if IS_ENABLED(CONFIG_ARCH_SUN55IW6)
-	ktime_t kt_period;
-#endif
 	int ret, index = pwm->hwpwm;
 	unsigned long flags;
+	struct device *dev = pwmchip_parent(chip);
 
-	chip->index = 0;
-	sub_np = of_parse_phandle(pwm_chip->dev->of_node, "sunxi-pwms", index);
+	sunxi_pwm->index = 0;
+	sub_np = of_parse_phandle(dev->of_node, "sunxi-pwms", index);
 	if (IS_ERR_OR_NULL(sub_np)) {
-		sunxi_err(chip->pwm_chip.dev, "can't parse \"pwms\" property\n");
+		sunxi_err(&chip->dev, "can't parse \"pwms\" property\n");
 		return -ENODEV;
 	}
 	pwm_pdevice = of_find_device_by_node(sub_np);
 	if (IS_ERR_OR_NULL(pwm_pdevice)) {
-		sunxi_err(chip->pwm_chip.dev, "can't parse pwm device\n");
+		sunxi_err(&chip->dev, "can't parse pwm device\n");
 		return -ENODEV;
 	}
 
-	ret = sunxi_pwm_regulator_request(chip, &pwm_pdevice->dev, index);
+	ret = sunxi_pwm_regulator_request(sunxi_pwm, &pwm_pdevice->dev, index);
 	if (ret) {
-		sunxi_err(chip->pwm_chip.dev, "request regulator failed!\n");
+		sunxi_err(&chip->dev, "request regulator failed!\n");
 		return ret;
 	}
 
 	ret = sunxi_pwm_regulator_enable(chip, index);
 	if (ret) {
-		sunxi_err(chip->pwm_chip.dev, "enable regulator failed!\n");
+		sunxi_err(&chip->dev, "enable regulator failed!\n");
 		goto err0;
 	}
 
 	ret = sunxi_pwm_pin_set_state(&pwm_pdevice->dev, PWM_PIN_STATE_ACTIVE);
 	if (ret) {
-		sunxi_err(chip->pwm_chip.dev, "set pinctrl status failed!\n");
+		sunxi_err(&chip->dev, "set pinctrl status failed!\n");
 		goto err1;
 	}
 
-	spin_lock_irqsave(&chip->lock, flags);
+	spin_lock_irqsave(&sunxi_pwm->lock, flags);
 	/* enable clk for pwm controller */
-	sunxi_pwm_set_reg(pwm_chip, PWM_PCGR, index, 1, 1);
+	sunxi_pwm_set_reg(chip, PWM_PCGR, index, 1, 1);
 
 	/* Enable capture */
-	sunxi_pwm_set_reg(pwm_chip, PWM_CER, index,  0x1, 0x1);
-	spin_unlock_irqrestore(&chip->lock, flags);
+	sunxi_pwm_set_reg(chip, PWM_CER, index,  0x1, 0x1);
+	spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 	/* enabled rising edge trigger */
-	sunxi_pwm_writel(pwm_chip, PWM_CCR_BASE + index * chip->data->pwm_reg_uniform_offset, PWM_CAPTURE_CRTE |
+	sunxi_pwm_writel(chip, PWM_CCR_BASE + index * sunxi_pwm->data->pwm_reg_uniform_offset, PWM_CAPTURE_CRTE |
 			PWM_CAPTURE_CRLF);
 
 	/* enable rise&fail interrupt */
-	spin_lock_irqsave(&chip->lock, flags);
-	sunxi_pwm_set_reg(pwm_chip, PWM_CIER, (index << 0x1), 0x2, 0x3);
-	spin_unlock_irqrestore(&chip->lock, flags);
+	spin_lock_irqsave(&sunxi_pwm->lock, flags);
+	sunxi_pwm_set_reg(chip, PWM_CIER, (index << 0x1), 0x2, 0x3);
+	spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 
-#if IS_ENABLED(CONFIG_ARCH_SUN55IW6)
-	/* capture 1s */
-	kt_period = ktime_set(1, 0);
-
-	hrtimer_init(&chip->cap_timer.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	chip->cap_timer.timer.function = cap_timer_callback;
-	chip->cap_timer.pwm = pwm;
-
-	sunxi_pwm_capture_count_enable(pwm, index);
-
-	hrtimer_start(&chip->cap_timer.timer, kt_period, HRTIMER_MODE_REL);
-
-	wait_event_interruptible_timeout(chip->wait,
-		0, msecs_to_jiffies(1000));
-
-	pr_info(" pulse_num:%d\n", chip->cap_timer.pulse_num);
-#else
-	ret = wait_event_interruptible_timeout(chip->wait,
-			(chip->index >= 0x2) ? 1:0, msecs_to_jiffies(timeout));
+	ret = wait_event_interruptible_timeout(sunxi_pwm->wait,
+			(sunxi_pwm->index >= 0x2) ? 1:0, msecs_to_jiffies(timeout));
 	if (ret == 0) {
-		sunxi_err(chip->pwm_chip.dev, "capture pwm timeout!\n");
+		sunxi_err(&chip->dev, "capture pwm timeout!\n");
 		ret = -EINVAL;
 		goto err1;
 	}
-#endif
 
 	reg_offset = sunxi_pwm_regs[index >> 0x1];
-	reg_val = sunxi_pwm_readl(pwm_chip, reg_offset);
+	reg_val = sunxi_pwm_readl(chip, reg_offset);
 	pwm_div = sunxi_pwm_pre_scal[reg_val & (0x000f)][1];
 	if (reg_val & (0x01 << PWM_CLK_SRC_SHIFT))
 		pwm_clk = 100;  /* 100M */
 	else
 		pwm_clk = 24;  /* 24M */
 
-	temp_clk = (chip->cap_time[1] + chip->cap_time[2]) * 1000 * pwm_div;
+	temp_clk = (sunxi_pwm->cap_time[1] + sunxi_pwm->cap_time[2]) * 1000 * pwm_div;
 	do_div(temp_clk, pwm_clk);
 	result->period = (unsigned int)temp_clk;
-	temp_clk = chip->cap_time[1] * 1000 * pwm_div;
+	temp_clk = sunxi_pwm->cap_time[1] * 1000 * pwm_div;
 	do_div(temp_clk, pwm_clk);
 	result->duty_cycle = (unsigned int)temp_clk;
 
 	/* disable rise&fail interrupt */
-	spin_lock_irqsave(&chip->lock, flags);
-	sunxi_pwm_set_reg(pwm_chip, PWM_CIER, (index << 0x1), 0x2, 0x0);
-	sunxi_pwm_set_reg(pwm_chip, PWM_PCGR, index, 1, 0);
-	spin_unlock_irqrestore(&chip->lock, flags);
+	spin_lock_irqsave(&sunxi_pwm->lock, flags);
+	sunxi_pwm_set_reg(chip, PWM_CIER, (index << 0x1), 0x2, 0x0);
+	sunxi_pwm_set_reg(chip, PWM_PCGR, index, 1, 0);
+	spin_unlock_irqrestore(&sunxi_pwm->lock, flags);
 
 	sunxi_pwm_pin_set_state(&pwm_pdevice->dev, PWM_PIN_STATE_SLEEP);
 
-	sunxi_pwm_regulator_disable(chip, index);
+	sunxi_pwm_regulator_disable(sunxi_pwm, index);
 
 	return 0;
 
 err1:
-	sunxi_pwm_regulator_disable(chip, index);
+	sunxi_pwm_regulator_disable(sunxi_pwm, index);
 err0:
 	sunxi_pwm_regulator_release(chip);
 	return ret;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
-static int sunxi_pwm_apply(struct pwm_chip *pwm_chip,
+static int sunxi_pwm_apply(struct pwm_chip *chip,
 				struct pwm_device *pwm,
 				const struct pwm_state *newstate)
 {
 	int err;
-	struct sunxi_pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm;
 	struct pwm_state *oldstate = &pwm->state;
 	u64 duty_cycle = newstate->duty_cycle;
 
-	chip = to_sunxi_pwm_chip(pwm_chip);
+	sunxi_pwm = to_sunxi_pwm_chip(chip);
 
 	sunxi_debug(
-		pwm_chip->dev,
+		&chip->dev,
 		"%s:\n"
 		"enabled    %d -> %d\n"
 		"polarity   %d -> %d\n"
@@ -1861,12 +1582,12 @@ static int sunxi_pwm_apply(struct pwm_chip *pwm_chip,
 	* The first call has a duty_cycle of 0, which may cause backlight flickering at low baud rates.
 	* Ignore the first call's duty_cycle to prevent this.
 	*/
-	if (chip->channel_first_boot_flag[pwm->hwpwm]) {
+	if (sunxi_pwm->channel_first_boot_flag[pwm->hwpwm]) {
 		if (oldstate->enabled && newstate->enabled && !newstate->duty_cycle && oldstate->polarity == newstate->polarity) {
 			duty_cycle = oldstate->duty_cycle;
-			sunxi_debug(pwm_chip->dev, "pwm chan %d first boot, ignore duty_cycle\n", pwm->hwpwm);
+			sunxi_debug(&chip->dev, "pwm chan %d first boot, ignore duty_cycle\n", pwm->hwpwm);
 		}
-		chip->channel_first_boot_flag[pwm->hwpwm] = false;
+		sunxi_pwm->channel_first_boot_flag[pwm->hwpwm] = false;
 	}
 
 	/*
@@ -1880,105 +1601,96 @@ static int sunxi_pwm_apply(struct pwm_chip *pwm_chip,
 
 	if (!newstate->enabled) {
 		if (oldstate->enabled) {
-			sunxi_debug(pwm_chip->dev, "enable to disable pwm chan %d\n", pwm->hwpwm);
-			sunxi_pwm_disable(pwm_chip, pwm);
+			sunxi_debug(&chip->dev, "enable to disable pwm chan %d\n", pwm->hwpwm);
+			sunxi_pwm_disable(chip, pwm);
 			return 0;
 		}
-		sunxi_debug(pwm_chip->dev, "disable to disable pwm chan %d, ignore it\n", pwm->hwpwm);
+		sunxi_debug(&chip->dev, "disable to disable pwm chan %d, ignore it\n", pwm->hwpwm);
 		return 0;
 	}
 
-	if (chip->channel_polarity_flag[pwm->hwpwm]) {
+	if (sunxi_pwm->channel_polarity_flag[pwm->hwpwm]) {
 		/* init normal polarity for default */
-		chip->channel_polarity_flag[pwm->hwpwm] = false;
-		err = sunxi_pwm_set_polarity(pwm_chip, pwm, newstate->polarity);
+		sunxi_pwm->channel_polarity_flag[pwm->hwpwm] = false;
+		err = sunxi_pwm_set_polarity(chip, pwm, newstate->polarity);
 		if (err) {
 			return err;
 		}
-	} else if (chip->resume_polarity_flag[pwm->hwpwm]) {
+	} else if (sunxi_pwm->resume_polarity_flag[pwm->hwpwm]) {
 		/* config polarity when resume */
-		chip->resume_polarity_flag[pwm->hwpwm] = false;
-		err = sunxi_pwm_set_polarity(pwm_chip, pwm, oldstate->polarity);
+		sunxi_pwm->resume_polarity_flag[pwm->hwpwm] = false;
+		err = sunxi_pwm_set_polarity(chip, pwm, oldstate->polarity);
 		if (err) {
 			return err;
 		}
 	} else if (newstate->polarity != oldstate->polarity) {
 		/* config polarity when polarity is changed */
-		err = sunxi_pwm_set_polarity(pwm_chip, pwm, newstate->polarity);
+		err = sunxi_pwm_set_polarity(chip, pwm, newstate->polarity);
 		if (err) {
 			return err;
 		}
 	}
 
-	err = sunxi_pwm_config_channel(pwm_chip, pwm, duty_cycle, newstate->period);
+	err = sunxi_pwm_config_channel(chip, pwm, duty_cycle, newstate->period);
 	if (err)
 		return err;
 
 	/* check if need to enable */
 	if (!oldstate->enabled) {
-		sunxi_debug(pwm_chip->dev, "disable to enable pwm chan %d, update settings and enable\n", pwm->hwpwm);
-		err = sunxi_pwm_enable(pwm_chip, pwm);
+		sunxi_debug(&chip->dev, "disable to enable pwm chan %d, update settings and enable\n", pwm->hwpwm);
+		err = sunxi_pwm_enable(chip, pwm);
 		if (err)
-			sunxi_err(pwm_chip->dev, "enable pwm chan %d failed\n", pwm->hwpwm);
+			sunxi_err(&chip->dev, "enable pwm chan %d failed\n", pwm->hwpwm);
 
 		return err;
 	}
 
-	sunxi_debug(pwm_chip->dev, "enable to enable pwm chan %d, just update settings\n", pwm->hwpwm);
+	sunxi_debug(&chip->dev, "enable to enable pwm chan %d, just update settings\n", pwm->hwpwm);
 
 	return 0;
 }
-#endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 25)
-static int sunxi_pwm_get_state(struct pwm_chip *pwm_chip,
+static int sunxi_pwm_get_state(struct pwm_chip *chip,
 				struct pwm_device *pwm_device,
 				struct pwm_state *state)
-#else
-static void sunxi_pwm_get_state(struct pwm_chip *pwm_chip,
-				struct pwm_device *pwm_device,
-				struct pwm_state *state)
-#endif
 {
 	unsigned int reg_offset, prescale;
 	u32 val, sel;
 	unsigned long period, duty;
 	unsigned long long temp, clk_source;
 	unsigned int div_m;
-	struct sunxi_pwm_chip *chip;
-
-	chip = to_sunxi_pwm_chip(pwm_chip);
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
 
 	sel = pwm_device->hwpwm;
-	reg_offset = chip->data->pcr_base_offset + sel * chip->data->pwm_reg_uniform_offset;
+	reg_offset = sunxi_pwm->data->pcr_base_offset + sel * sunxi_pwm->data->pwm_reg_uniform_offset;
 
-	val = sunxi_pwm_readl(pwm_chip, reg_offset);
+	val = sunxi_pwm_readl(chip, reg_offset);
 	if (val & BIT_MASK(PWM_ACT_STA))
 		state->polarity = PWM_POLARITY_NORMAL;
 	else
 		state->polarity = PWM_POLARITY_INVERSED;
 
-	val = sunxi_pwm_readl(pwm_chip, chip->data->per_offset);
+	val = sunxi_pwm_readl(chip, sunxi_pwm->data->per_offset);
 	if (val & BIT_MASK(sel))
 		state->enabled = true;
 	else
 		state->enabled = false;
 
-	val = sunxi_pwm_readl(pwm_chip, reg_offset);
+	val = sunxi_pwm_readl(chip, reg_offset);
 	prescale = (val & PWM_PRESCAL_K) + 1;
 
-	reg_offset = chip->data->ppr_base_offset + chip->data->pwm_reg_uniform_offset * sel;
-	val = sunxi_pwm_readl(pwm_chip, reg_offset);
+	reg_offset = sunxi_pwm->data->ppr_base_offset + sunxi_pwm->data->pwm_reg_uniform_offset * sel;
+	val = sunxi_pwm_readl(chip, reg_offset);
 	duty = val & PWM_DUTY;
 	period = val & PWM_PERIOD;
 
 	reg_offset = sunxi_pwm_regs[sel >> 0x1];
-	val = sunxi_pwm_readl(pwm_chip, reg_offset);
+	val = sunxi_pwm_readl(chip, reg_offset);
 	if (val & BIT_MASK(PWM_CLK_SRC)) {
 		clk_source = SUNXI_CLK_100M;
 	} else {
-		clk_source = chip->data->has_hosc_clock ? \
-		clk_get_rate(chip->hosc) \
+		clk_source = sunxi_pwm->data->has_hosc_clock ? \
+		clk_get_rate(sunxi_pwm->hosc) \
 		: SUNXI_CLK_24M;
 	}
 
@@ -1993,9 +1705,7 @@ static void sunxi_pwm_get_state(struct pwm_chip *pwm_chip,
 	do_div(temp, clk_source);
 	state->duty_cycle = temp;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 25)
 	return 0;
-#endif
 }
 
 static int get_min_pwm_node_from_aliases(struct platform_device *pdev)
@@ -2043,40 +1753,36 @@ static int get_min_pwm_node_from_aliases(struct platform_device *pdev)
 }
 
 static int sunxi_pwm_resource_get(struct platform_device *pdev,
-				struct sunxi_pwm_chip *chip,
+				struct pwm_chip *chip,
 				struct device_node *np)
 {
-	struct resource *res;
 	int err, i, pwm_min_node;
 	const char *st = NULL;
 	struct platform_device *pwm_pdevice;
 	struct device_node *sub_np;
+	struct sunxi_pwm_chip *sunxi_pwm;
 
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!res) {
-		sunxi_err(&pdev->dev, "fail to get pwm IORESOURCE_MEM\n");
-		return -EINVAL;
-	}
+	sunxi_pwm = to_sunxi_pwm_chip(chip);
 
-	chip->base = devm_ioremap_resource(&pdev->dev, res);
-	if (IS_ERR(chip->base)) {
+	sunxi_pwm->base = devm_platform_ioremap_resource(pdev, 0);
+	if (IS_ERR(sunxi_pwm->base)) {
 		sunxi_err(&pdev->dev, "fail to map pwm IO resource\n");
-		return PTR_ERR(chip->base);
+		return PTR_ERR(sunxi_pwm->base);
 	}
 
-	chip->pwm_num = of_alias_get_id(np, "pwm");
-	if (chip->pwm_num < 0) {
+	sunxi_pwm->pwm_num = of_alias_get_id(np, "pwm");
+	if (sunxi_pwm->pwm_num < 0) {
 		sunxi_err(&pdev->dev, "failed to get alias id\n");
 		return -EINVAL;
 	}
 
 	pwm_min_node = get_min_pwm_node_from_aliases(pdev);
 
-	if (chip->pwm_num != pwm_min_node) {
-		for (i = 0; i < chip->pwm_num; i++) {
+	if (sunxi_pwm->pwm_num != pwm_min_node) {
+		for (i = 0; i < sunxi_pwm->pwm_num; i++) {
 			if (success_probe[i] == 0) {
 				sunxi_err(&pdev->dev, "pwm%d must probe after all of pwm0 ~ pwm%d probed, now pwm%d not probe",
-						chip->pwm_num, chip->pwm_num -1, i);
+						sunxi_pwm->pwm_num, sunxi_pwm->pwm_num -1, i);
 				return -EPROBE_DEFER;
 			}
 		}
@@ -2086,31 +1792,31 @@ static int sunxi_pwm_resource_get(struct platform_device *pdev,
 	 * If there are clock resources, has_clock is true, apply for clock resources;
 	 * otherwise, has_clock is false, you do not need to apply for clock resources.
 	 */
-	if (chip->data->has_clock) {
-		chip->reset = devm_reset_control_get_optional(&pdev->dev, NULL);
-		if (IS_ERR(chip->reset)) {
+	if (sunxi_pwm->data->has_clock) {
+		sunxi_pwm->reset = devm_reset_control_get_optional(&pdev->dev, NULL);
+		if (IS_ERR(sunxi_pwm->reset)) {
 			sunxi_err(&pdev->dev, "can't get pwm reset clk\n");
-			return PTR_ERR(chip->reset);
+			return PTR_ERR(sunxi_pwm->reset);
 		}
 
-		chip->clk = devm_clk_get(&pdev->dev, NULL);
-		if (!chip->clk) {
-			chip->clk = of_clk_get(pdev->dev.of_node, 0);
-			if (IS_ERR_OR_NULL(chip->clk)) {
+		sunxi_pwm->clk = devm_clk_get(&pdev->dev, NULL);
+		if (!sunxi_pwm->clk) {
+			sunxi_pwm->clk = of_clk_get(pdev->dev.of_node, 0);
+			if (IS_ERR_OR_NULL(sunxi_pwm->clk)) {
 				sunxi_err(&pdev->dev, "fail to get pwm clk!\n");
 				return -EINVAL;
 			}
 		}
-		if (chip->data->has_bus_clock) {
-			chip->bclk = devm_clk_get(&pdev->dev, "clk_bus_pwm");
-			if (!chip->bclk) {
+		if (sunxi_pwm->data->has_bus_clock) {
+			sunxi_pwm->bclk = devm_clk_get(&pdev->dev, "clk_bus_pwm");
+			if (!sunxi_pwm->bclk) {
 				sunxi_err(&pdev->dev, "fail to get pwm clk!\n");
 				return -EINVAL;
 			}
 		}
-		if (chip->data->has_hosc_clock) {
-			chip->hosc = devm_clk_get(&pdev->dev, "clk_hosc");
-			if (!chip->hosc) {
+		if (sunxi_pwm->data->has_hosc_clock) {
+			sunxi_pwm->hosc = devm_clk_get(&pdev->dev, "clk_hosc");
+			if (!sunxi_pwm->hosc) {
 				sunxi_err(&pdev->dev, "fail to get clk_hosc!\n");
 				return -EINVAL;
 			}
@@ -2118,49 +1824,34 @@ static int sunxi_pwm_resource_get(struct platform_device *pdev,
 	}
 
 	/* read property pwm-number */
-	err = of_property_read_u32(np, "pwm-number", &chip->pwm_chip.npwm);
+	err = of_property_read_u32(np, "pwm-number", &chip->npwm);
 	if (err) {
 		sunxi_err(&pdev->dev, "failed to get pwm number!\n");
 		return -EINVAL;
 	}
 
-	/* read property pwm-base */
-	err = of_property_read_u32(np, "pwm-base", &chip->pwm_chip.base);
-	if (err) {
-		sunxi_err(&pdev->dev, "failed to get pwm-base!\n");
-		return -EINVAL;
-	}
-
-	sunxi_debug(&pdev->dev, "base is %d, num is %d\n", chip->pwm_chip.base, chip->pwm_chip.npwm);
-
-	err = of_property_read_u32(np, "#pwm-cells", &chip->cells_num);
-	if (err) {
-		sunxi_err(&pdev->dev, "failed to get pwm-cells!\n");
-		return -EINVAL;
-	}
-
-	if (chip->data->config_status) {
+	if (sunxi_pwm->data->config_status) {
 		err = of_property_read_string(np, "status", &st);
 		if (err) {
 			sunxi_err(&pdev->dev, "failed to get status!\n");
 			return -EINVAL;
 		}
 		if (st && (!strcmp(st, "okay") || !strcmp(st, "ok")))
-			chip->status = true;
+			sunxi_pwm->status = true;
 	}
 
-	chip->config = devm_kzalloc(&pdev->dev, sizeof(*chip->config) * chip->pwm_chip.npwm, GFP_KERNEL);
-	if (!chip->config)
+	sunxi_pwm->config = devm_kzalloc(&pdev->dev, sizeof(*sunxi_pwm->config) * chip->npwm, GFP_KERNEL);
+	if (!sunxi_pwm->config)
 		return -ENOMEM;
 
-	chip->group_config = devm_kzalloc(&pdev->dev, sizeof(*chip->group_config) * chip->pwm_chip.npwm, GFP_KERNEL);
-	if (!chip->group_config)
+	sunxi_pwm->group_config = devm_kzalloc(&pdev->dev, sizeof(*sunxi_pwm->group_config) * chip->npwm, GFP_KERNEL);
+	if (!sunxi_pwm->group_config)
 		return -ENOMEM;
 
-	for (i = 0; i < chip->pwm_chip.npwm; i++) {
+	for (i = 0; i < chip->npwm; i++) {
 		/* set all the pwm channel to singal mode as dafault */
-		chip->config[i].bind_pwm = SUNXI_PWM_BIND_DEFAULT;
-		chip->group_config[i].group_channel = SUNXI_PWM_GROUP_CH_DEFAULT;
+		sunxi_pwm->config[i].bind_pwm = SUNXI_PWM_BIND_DEFAULT;
+		sunxi_pwm->group_config[i].group_channel = SUNXI_PWM_GROUP_CH_DEFAULT;
 
 		sub_np = of_parse_phandle(np, "sunxi-pwms", i);
 		if (!sub_np) {
@@ -2175,7 +1866,7 @@ static int sunxi_pwm_resource_get(struct platform_device *pdev,
 			continue;
 		}
 
-		err = sunxi_pwm_get_config(pwm_pdevice, &chip->config[i], &chip->group_config[i]);
+		err = sunxi_pwm_get_config(pwm_pdevice, &sunxi_pwm->config[i], &sunxi_pwm->group_config[i]);
 		if (err) {
 			sunxi_err(&pdev->dev, "Get config failed,exit!\n");
 			return err;
@@ -2185,37 +1876,38 @@ static int sunxi_pwm_resource_get(struct platform_device *pdev,
 	return 0;
 }
 
-static void sunxi_pwm_resource_put(struct sunxi_pwm_chip *chip)
+static void sunxi_pwm_resource_put(struct pwm_chip *chip)
 {
 }
 
-static int sunxi_pwm_clk_enable(struct sunxi_pwm_chip *chip)
+static int sunxi_pwm_clk_enable(struct pwm_chip *chip)
 {
 	int err;
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
 
-	if (chip->data->has_clock) {
+	if (sunxi_pwm->data->has_clock) {
 		/*
 		 * In order to ensure the consistent display from uboot to the kernel stage,
 		 * there is no need to reset the clock in the kernel stage.
 		 */
-		err = reset_control_deassert(chip->reset);
+		err = reset_control_deassert(sunxi_pwm->reset);
 		if (err) {
-			sunxi_err(chip->pwm_chip.dev, "deassert pwm reset failed\n");
+			sunxi_err(&chip->dev, "deassert pwm reset failed\n");
 			return err;
 		}
 
-		err = clk_prepare_enable(chip->clk);
+		err = clk_prepare_enable(sunxi_pwm->clk);
 		if (err) {
-			sunxi_err(chip->pwm_chip.dev, "try to enbale pwm clk failed\n");
-			reset_control_assert(chip->reset);
+			sunxi_err(&chip->dev, "try to enbale pwm clk failed\n");
+			reset_control_assert(sunxi_pwm->reset);
 			return err;
 		}
-		if (chip->data->has_bus_clock) {
-			err = clk_prepare_enable(chip->bclk);
+		if (sunxi_pwm->data->has_bus_clock) {
+			err = clk_prepare_enable(sunxi_pwm->bclk);
 			if (err) {
-				sunxi_err(chip->pwm_chip.dev, "try to enbale pwm bclk failed\n");
-				clk_disable_unprepare(chip->clk);
-				reset_control_assert(chip->reset);
+				sunxi_err(&chip->dev, "try to enbale pwm bclk failed\n");
+				clk_disable_unprepare(sunxi_pwm->clk);
+				reset_control_assert(sunxi_pwm->reset);
 				return err;
 			}
 		}
@@ -2224,20 +1916,22 @@ static int sunxi_pwm_clk_enable(struct sunxi_pwm_chip *chip)
 	return 0;
 }
 
-static void sunxi_pwm_clk_disable(struct sunxi_pwm_chip *chip)
+static void sunxi_pwm_clk_disable(struct pwm_chip *chip)
 {
-	if (chip->data->has_clock) {
-		if (chip->data->has_bus_clock)
-			clk_disable_unprepare(chip->bclk);
-		clk_disable_unprepare(chip->clk);
-		reset_control_assert(chip->reset);
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
+
+	if (sunxi_pwm->data->has_clock) {
+		if (sunxi_pwm->data->has_bus_clock)
+			clk_disable_unprepare(sunxi_pwm->bclk);
+		clk_disable_unprepare(sunxi_pwm->clk);
+		reset_control_assert(sunxi_pwm->reset);
 	}
 }
 
-static irqreturn_t sunxi_pwm_handler(int irq, void *dev_id)
+static irqreturn_t sunxi_pwm_handler(int irq, void *data)
 {
-	struct sunxi_pwm_chip *pwm = (struct sunxi_pwm_chip *)dev_id;
-	struct pwm_chip *chip = &(pwm->pwm_chip);
+	struct pwm_chip *chip = data;
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
 	unsigned int device_num;
 	unsigned int reg_val = 0;
 
@@ -2261,29 +1955,29 @@ static irqreturn_t sunxi_pwm_handler(int irq, void *dev_id)
 	 * After 20 cycles, we consider the value to be reliable.
 	 */
 	if (reg_val == (0x1 << (device_num << 1))) {
-		pwm->cap_time[1] = sunxi_pwm_readl(chip,
-				PWM_CRLR_BASE + device_num * pwm->data->pwm_reg_uniform_offset);
+		sunxi_pwm->cap_time[1] = sunxi_pwm_readl(chip,
+				PWM_CRLR_BASE + device_num * sunxi_pwm->data->pwm_reg_uniform_offset);
 		/* clean capture CRLF and enabled fail interrupt */
 		sunxi_pwm_writel(chip,
-				PWM_CCR_BASE + device_num * pwm->data->pwm_reg_uniform_offset, PWM_CAPTURE_CLEAR_ALL);
+				PWM_CCR_BASE + device_num * sunxi_pwm->data->pwm_reg_uniform_offset, PWM_CAPTURE_CLEAR_ALL);
 	}
 
 	if (reg_val == (0x2 << (device_num << 1))) {
-		pwm->cap_time[2] = sunxi_pwm_readl(chip,
-				PWM_CFLR_BASE + device_num * pwm->data->pwm_reg_uniform_offset);
+		sunxi_pwm->cap_time[2] = sunxi_pwm_readl(chip,
+				PWM_CFLR_BASE + device_num * sunxi_pwm->data->pwm_reg_uniform_offset);
 		/* clean capture CFLF and disabled fail interrupt */
 		sunxi_pwm_writel(chip,
-				PWM_CCR_BASE + device_num * pwm->data->pwm_reg_uniform_offset, PWM_CAPTURE_EXCLUDE_CFTE_EN_CLEAR);
+				PWM_CCR_BASE + device_num * sunxi_pwm->data->pwm_reg_uniform_offset, PWM_CAPTURE_EXCLUDE_CFTE_EN_CLEAR);
 	}
 
-	if (pwm->index >= PWM_CAPTURE_RETRYS) {
+	if (sunxi_pwm->index >= PWM_CAPTURE_RETRYS) {
 		/* clean capture CRLF and disabled rise interrupt */
 		sunxi_pwm_writel(chip,
-				PWM_CCR_BASE + device_num * pwm->data->pwm_reg_uniform_offset, PWM_CAPTURE_EXCLUDE_CRTE_EN_CLEAR);
-		pwm->index = 0;
-		wake_up(&pwm->wait);
+				PWM_CCR_BASE + device_num * sunxi_pwm->data->pwm_reg_uniform_offset, PWM_CAPTURE_EXCLUDE_CRTE_EN_CLEAR);
+		sunxi_pwm->index = 0;
+		wake_up(&sunxi_pwm->wait);
 	}
-	pwm->index++;
+	sunxi_pwm->index++;
 
 	/* Clean capture rise status */
 	sunxi_pwm_writel(chip, PWM_CISR, reg_val);
@@ -2292,9 +1986,10 @@ static irqreturn_t sunxi_pwm_handler(int irq, void *dev_id)
 }
 
 static int sunxi_pwm_hw_init(struct platform_device *pdev,
-			     struct sunxi_pwm_chip *chip)
+			     struct pwm_chip *chip)
 {
 	int err;
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
 
 	err = sunxi_pwm_clk_enable(chip);
 	if (err) {
@@ -2302,12 +1997,12 @@ static int sunxi_pwm_hw_init(struct platform_device *pdev,
 		return err;
 	}
 
-	chip->irq = platform_get_irq(pdev, 0);
-	if (chip->irq < 0)
+	sunxi_pwm->irq = platform_get_irq(pdev, 0);
+	if (sunxi_pwm->irq < 0)
 		sunxi_info(&pdev->dev, "get interrupt resource failed and capture mode invalid\n");
 	else {
-		init_waitqueue_head(&chip->wait);
-		err = devm_request_irq(&pdev->dev, chip->irq, sunxi_pwm_handler, IRQF_TRIGGER_NONE, "pwm", chip);
+		init_waitqueue_head(&sunxi_pwm->wait);
+		err = devm_request_irq(&pdev->dev, sunxi_pwm->irq, sunxi_pwm_handler, IRQF_TRIGGER_NONE, "pwm", chip);
 		if (err) {
 			sunxi_err(&pdev->dev, "failed to request PWM IRQ\n");
 			sunxi_pwm_clk_disable(chip);
@@ -2317,29 +2012,14 @@ static int sunxi_pwm_hw_init(struct platform_device *pdev,
 
 	return 0;
 }
-
-static void sunxi_pwm_hw_exit(struct sunxi_pwm_chip *chip)
-{
-	sunxi_pwm_clk_disable(chip);
-}
-
 static struct pwm_ops sunxi_pwm_ops = {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 	.apply = sunxi_pwm_apply,
 	.free = sunxi_pwm_disable,
-#else
-	.config = sunxi_pwm_config_channel,
-	.enable = sunxi_pwm_enable,
-	.disable = sunxi_pwm_disable,
-	.set_polarity = sunxi_pwm_set_polarity,
-#endif
-
 	.capture = sunxi_pwm_capture,
 	.get_state = sunxi_pwm_get_state,
-	.owner = THIS_MODULE,
 };
 
-static const struct of_device_id sunxi_pwm_match[] = {
+static const struct of_device_id sunxi_pwm_of_match[] = {
 	{ .compatible = "allwinner,sunxi-pwm", .data = &sunxi_pwm_v200_data},
 	{ .compatible = "allwinner,sunxi-s_pwm", .data = &sunxi_pwm_v200_data},
 	{ .compatible = "allwinner,sunxi-pwm-v201", .data = &sunxi_pwm_v201_data},
@@ -2351,37 +2031,38 @@ static const struct of_device_id sunxi_pwm_match[] = {
 	{ .compatible = "allwinner,sunxi-pwm-v101", .data = &sunxi_pwm_v101_data},
 	{ /* sentinel */ },
 };
-MODULE_DEVICE_TABLE(of, sunxi_pwm_match);
+MODULE_DEVICE_TABLE(of, sunxi_pwm_of_match);
 
-static int sunxi_pwm_fill_hw_data(struct sunxi_pwm_chip *chip)
+static int sunxi_pwm_fill_hw_data(struct platform_device *pdev,
+				struct sunxi_pwm_chip *sunxi_pwm)
 {
 	size_t size;
 	const struct of_device_id *of_id;
 
 	/* get hw data from match table */
-	of_id = of_match_device(sunxi_pwm_match, chip->pwm_chip.dev);
+	of_id = of_match_device(sunxi_pwm_of_match, &pdev->dev);
 	if (!of_id) {
-		sunxi_err(chip->pwm_chip.dev, "of_match_device() failed\n");
+		sunxi_err(&pdev->dev, "of_match_device() failed\n");
 		return -EINVAL;
 	}
 
-	chip->data = (struct sunxi_pwm_hw_data *)(of_id->data);
+	sunxi_pwm->data = (struct sunxi_pwm_hw_data *)(of_id->data);
 
-	size = sizeof(u32) * chip->data->pm_regs_num;
-	chip->pm_regs_offset = devm_kzalloc(chip->pwm_chip.dev, size, GFP_KERNEL);
-	if (!chip->pm_regs_offset)
+	size = sizeof(u32) * sunxi_pwm->data->pm_regs_num;
+	sunxi_pwm->pm_regs_offset = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
+	if (!sunxi_pwm->pm_regs_offset)
 		return -ENOMEM;
 
-	chip->regs_backup = devm_kzalloc(chip->pwm_chip.dev, size, GFP_KERNEL);
-	if (!chip->regs_backup)
+	sunxi_pwm->regs_backup = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
+	if (!sunxi_pwm->regs_backup)
 		return -ENOMEM;
 	/* Configure the registers that need to be saved for wake-up from sleep */
-	chip->pm_regs_offset[0] = PWM_PIER;
-	chip->pm_regs_offset[1] = PWM_CIER;
-	chip->pm_regs_offset[2] = chip->data->per_offset;
-	chip->pm_regs_offset[3] = chip->data->cer_offset;
-	if (chip->data->clk_gating_separate)
-		chip->pm_regs_offset[4] = PWM_PCGR;
+	sunxi_pwm->pm_regs_offset[0] = PWM_PIER;
+	sunxi_pwm->pm_regs_offset[1] = PWM_CIER;
+	sunxi_pwm->pm_regs_offset[2] = sunxi_pwm->data->per_offset;
+	sunxi_pwm->pm_regs_offset[3] = sunxi_pwm->data->cer_offset;
+	if (sunxi_pwm->data->clk_gating_separate)
+		sunxi_pwm->pm_regs_offset[4] = PWM_PCGR;
 
 	return 0;
 }
@@ -2389,33 +2070,25 @@ static int sunxi_pwm_fill_hw_data(struct sunxi_pwm_chip *chip)
 static int sunxi_pwm_probe(struct platform_device *pdev)
 {
 	int ret, i;
-	struct sunxi_pwm_chip *chip;
+	struct pwm_chip *chip;
+	struct sunxi_pwm_chip *sunxi_pwm;
 	struct device_node *np = pdev->dev.of_node;
 
 	sunxi_info(&pdev->dev, "start probe");
 
-	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
-	if (!chip)
-		return -ENOMEM;
+	chip = devm_pwmchip_alloc(&pdev->dev, PWM_CHAN_NUM, sizeof(*sunxi_pwm));
+	if (IS_ERR(chip))
+		return PTR_ERR(chip);
+	sunxi_pwm = to_sunxi_pwm_chip(chip);
 
 	platform_set_drvdata(pdev, chip);
-	chip->pwm_chip.dev = &pdev->dev;
-	chip->pdev = pdev;
 
 	for (i = 0; i < PWM_NUM_MAX; i++) {
-		chip->channel_polarity_flag[i] = true;
-		chip->channel_first_boot_flag[i] = true;
+		sunxi_pwm->channel_polarity_flag[i] = true;
+		sunxi_pwm->channel_first_boot_flag[i] = true;
 	}
 
-#ifdef CONFIG_AW_AMP_SYS_RSC_MANAGER
-	ret = sunxi_pdev_request_peri_rsc(chip->pdev, "pwm_drv", &chip->amp_rsc);
-	if (ret) {
-		sunxi_err(&pdev->dev, "request AMP system peri resource for pwm failed, ret: %d\n", ret);
-		return ret;
-	}
-#endif
-
-	ret = sunxi_pwm_fill_hw_data(chip);
+	ret = sunxi_pwm_fill_hw_data(pdev, sunxi_pwm);
 	if (ret) {
 		sunxi_err(&pdev->dev, "unable to get hw_data\n");
 		return ret;
@@ -2427,7 +2100,7 @@ static int sunxi_pwm_probe(struct platform_device *pdev)
 		goto err0;
 	}
 
-	if (chip->data->config_status && !chip->status) {
+	if (sunxi_pwm->data->config_status && !sunxi_pwm->status) {
 		sunxi_debug(&pdev->dev, "the current status of pwmchip is disabled, it should not be loaded\n");
 		goto err1;
 	}
@@ -2438,103 +2111,84 @@ static int sunxi_pwm_probe(struct platform_device *pdev)
 		goto err1;
 	}
 
-	chip->pwm_chip.dev = &pdev->dev;
-	chip->pwm_chip.ops = &sunxi_pwm_ops;
-	chip->pwm_chip.of_xlate = of_pwm_xlate_with_flags;
-	chip->pwm_chip.of_pwm_n_cells = chip->cells_num;
+	chip->ops = &sunxi_pwm_ops;
 
-	spin_lock_init(&chip->lock);
+	spin_lock_init(&sunxi_pwm->lock);
 
-#if IS_ENABLED(CONFIG_ARCH_SUN55IW6)
-	init_completion(&chip->timer_completion);
-#endif
 	/*
 	 * register pwm chip to pwm-core should be the ending of probe
 	 * before registering, all pwm controller resources need to be ready
 	 * (pwm_request can happen anytime after registration)
 	 */
-	ret = pwmchip_add(&chip->pwm_chip);
+	ret = devm_pwmchip_add(&pdev->dev, chip);
 	if (ret < 0) {
 		sunxi_err(&pdev->dev, "register pwmchip failed: %d\n", ret);
 		goto err2;
 	}
 
-	sunxi_pwm_create_sysfs(chip->pdev);
-
-	success_probe[chip->pwm_num] = 1;
+	success_probe[sunxi_pwm->pwm_num] = 1;
 	sunxi_info(&pdev->dev, "pwmchip probe success\n");
 
 	return 0;
 
 err2:
-	sunxi_pwm_hw_exit(chip);
+	sunxi_pwm_clk_disable(chip);
 err1:
 	sunxi_pwm_resource_put(chip);
 err0:
 	return ret;
 }
 
-static int sunxi_pwm_remove(struct platform_device *pdev)
+static void sunxi_pwm_remove(struct platform_device *pdev)
 {
-	struct sunxi_pwm_chip *chip;
-#ifdef CONFIG_AW_AMP_SYS_RSC_MANAGER
-	int err;
-#endif
-
+	struct pwm_chip *chip;
+	
 	chip = platform_get_drvdata(pdev);
 
-	pwmchip_remove(&chip->pwm_chip);
-	sunxi_pwm_remove_sysfs(chip->pdev);
-	sunxi_pwm_hw_exit(chip);
-
-#ifdef CONFIG_AW_AMP_SYS_RSC_MANAGER
-	err = sunxi_amp_rsc_free(chip->amp_rsc);
-	if (err)
-		sunxi_err(chip->pwm_chip.dev, "release AMP system resource for pwm failed, ret: %d\n", err);
-#endif
+	pwmchip_remove(chip);
+	sunxi_pwm_clk_disable(chip);
 
 	sunxi_pwm_resource_put(chip);
 	sunxi_pwm_regulator_release(chip);
-
-	return 0;
 }
 
 #if IS_ENABLED(CONFIG_PM)
-static void sunxi_pwm_stop_work(struct sunxi_pwm_chip *chip)
+static void sunxi_pwm_stop_work(struct pwm_chip *chip)
 {
 	int i;
 	bool pwm_state;
 
-	for (i = 0; i < chip->pwm_chip.npwm; i++) {
-		if (!pwm_is_enabled(&chip->pwm_chip.pwms[i]))
+	for (i = 0; i < chip->npwm; i++) {
+		if (!pwm_is_enabled(&chip->pwms[i]))
 			continue;
 
 		/* Change the enabled to disable in suspend */
-		pwm_state = chip->pwm_chip.pwms[i].state.enabled;
-		pwm_disable(&chip->pwm_chip.pwms[i]);
-		chip->pwm_chip.pwms[i].state.enabled = pwm_state;
+		pwm_state = chip->pwms[i].state.enabled;
+		pwm_disable(&chip->pwms[i]);
+		chip->pwms[i].state.enabled = pwm_state;
 	}
 }
 
-static void sunxi_pwm_start_work(struct sunxi_pwm_chip *chip)
+static void sunxi_pwm_start_work(struct pwm_chip *chip)
 {
+	struct sunxi_pwm_chip *sunxi_pwm = to_sunxi_pwm_chip(chip);
 	int i;
 
-	for (i = 0; i < chip->pwm_chip.npwm; i++) {
-		chip->resume_polarity_flag[i] = true;
+	for (i = 0; i < chip->npwm; i++) {
+		sunxi_pwm->resume_polarity_flag[i] = true;
 
-		if (!pwm_is_enabled(&chip->pwm_chip.pwms[i]))
+		if (!pwm_is_enabled(&chip->pwms[i]))
 			continue;
 
 		/* It is enabled before suspend and must be enabled for resume */
-		chip->pwm_chip.pwms[i].state.enabled = false;
-		pwm_enable(&chip->pwm_chip.pwms[i]);
+		chip->pwms[i].state.enabled = false;
+		pwm_enable(&chip->pwms[i]);
 	}
 }
 
 static int sunxi_pwm_suspend(struct device *dev)
 {
-	struct sunxi_pwm_chip *chip = dev_get_drvdata(dev);
+	struct pwm_chip *chip = dev_get_drvdata(dev);
 
 	sunxi_pwm_stop_work(chip);
 
@@ -2547,7 +2201,7 @@ static int sunxi_pwm_suspend(struct device *dev)
 
 static int sunxi_pwm_resume(struct device *dev)
 {
-	struct sunxi_pwm_chip *chip = dev_get_drvdata(dev);
+	struct pwm_chip *chip = dev_get_drvdata(dev);
 
 	sunxi_pwm_clk_enable(chip);
 
@@ -2572,7 +2226,7 @@ static struct platform_driver sunxi_pwm_driver = {
 	.driver = {
 		.name = "sunxi_pwm",
 		.owner  = THIS_MODULE,
-		.of_match_table = sunxi_pwm_match,
+		.of_match_table = sunxi_pwm_of_match,
 		.pm = &pwm_pm_ops,
 	 },
 };
