@@ -45,7 +45,6 @@ obj-y += gmac/
 obj-y += stmmac/
 obj-y += usb/
 obj-y += twi/
-obj-y += spi/
 obj-y += spi-ng/
 obj-y += ledc/
 obj-y += pwm/
