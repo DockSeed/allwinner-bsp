@@ -38,7 +38,7 @@ struct sunxi_adapt_dai_ops_priv {
 		     const char *buf, size_t count))(func_ptr)
 
 #define sunxi_adpt_rtd_codec_dai(rtd, i, dai)	for_each_rtd_codec_dais(rtd, i, dai)
-#define sunxi_adpt_rtd_cpu_dai(rtd)		asoc_rtd_to_cpu(rtd, 0)
+#define sunxi_adpt_rtd_cpu_dai(rtd)		snd_soc_rtd_to_cpu(rtd, 0)
 #define sunxi_adpt_of_get_dai_name(of_node, dai_name) snd_soc_of_get_dai_name(of_node, dai_name, 0)
 #define sunxi_adpt_class_create(owner, name)	class_create(name)
 static inline void sunxi_adpt_vm_flags_set(struct vm_area_struct *vma, vm_flags_t flags)
@@ -57,7 +57,7 @@ static inline void sunxi_adpt_wait_time_conv(struct snd_pcm_substream *substream
 #define SUNXI_ATTR_SHOW_CONVERT(func_ptr)	func_ptr
 #define SUNXI_ATTR_STORE_CONVERT(func_ptr)	func_ptr
 #define sunxi_adpt_rtd_codec_dai(rtd, i, dai)	for_each_rtd_codec_dais(rtd, i, dai)
-#define sunxi_adpt_rtd_cpu_dai(rtd)		asoc_rtd_to_cpu(rtd, 0)
+#define sunxi_adpt_rtd_cpu_dai(rtd)		snd_soc_rtd_to_cpu(rtd, 0)
 #define sunxi_adpt_of_get_dai_name(of_node, dai_name)	snd_soc_of_get_dai_name(of_node, dai_name)
 #define sunxi_adpt_class_create(owner, name)	class_create(owner, name)
 static inline void sunxi_adpt_vm_flags_set(struct vm_area_struct *vma, vm_flags_t flags)

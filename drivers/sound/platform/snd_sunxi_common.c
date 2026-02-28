@@ -296,13 +296,6 @@ static int pacfg_level_trig_init(struct snd_sunxi_pacfg *pa_cfg)
 		SND_LOG_ERR("%s (%u) is invalid\n", str, gpio_tmp);
 		return -1;
 	}
-	ret = devm_gpio_request(&pdev->dev, gpio_tmp, str);
-	if (ret) {
-		SND_LOG_ERR("%s (%u) request failed\n", str, gpio_tmp);
-		return -1;
-	}
-	level_trig->pin = gpio_tmp;
-
 	snprintf(str, sizeof(str), "pa-pin-level-%d", index);
 	ret = of_property_read_u32(np, str, &temp_val);
 	if (ret < 0) {
@@ -312,6 +305,18 @@ static int pacfg_level_trig_init(struct snd_sunxi_pacfg *pa_cfg)
 		if (temp_val > 0)
 			level_trig->level = 1;
 	}
+
+	ret = devm_gpio_request_one(
+		&pdev->dev, 
+		gpio_tmp, 
+		level_trig->level ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH, 
+		str);
+	if (ret) {
+		SND_LOG_ERR("%s (%u) request failed\n", str, gpio_tmp);
+		return -1;
+	}
+	level_trig->pin = gpio_tmp;
+
 	snprintf(str, sizeof(str), "pa-pin-msleep-%d", index);
 	ret = of_property_read_u32(np, str, &temp_val);
 	if (ret < 0) {
@@ -328,7 +333,6 @@ static int pacfg_level_trig_init(struct snd_sunxi_pacfg *pa_cfg)
 	} else {
 		level_trig->msleep_1 = temp_val;
 	}
-	gpio_direction_output(level_trig->pin, !level_trig->level);
 
 	return 0;
 }
@@ -383,13 +387,6 @@ static int pacfg_pulse_trig_init(struct snd_sunxi_pacfg *pa_cfg)
 		SND_LOG_ERR("%s (%u) is invalid\n", str, gpio_tmp);
 		return -1;
 	}
-	ret = devm_gpio_request(&pdev->dev, gpio_tmp, str);
-	if (ret) {
-		SND_LOG_ERR("%s (%u) request failed\n", str, gpio_tmp);
-		return -1;
-	}
-	pulse_trig->pin = gpio_tmp;
-
 	/* get level */
 	snprintf(str, sizeof(str), "pa-pin-level-%d", index);
 	ret = of_property_read_u32(np, str, &temp_val);
@@ -400,6 +397,17 @@ static int pacfg_pulse_trig_init(struct snd_sunxi_pacfg *pa_cfg)
 		if (temp_val > 0)
 			pulse_trig->level = 1;
 	}
+
+	ret = devm_gpio_request_one(
+		&pdev->dev, 
+		gpio_tmp, 
+		pulse_trig->level ? GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH, 
+		str);
+	if (ret) {
+		SND_LOG_ERR("%s (%u) request failed\n", str, gpio_tmp);
+		return -1;
+	}
+	pulse_trig->pin = gpio_tmp;
 
 	snprintf(str, sizeof(str), "pa-pin-msleep-%d", index);
 	ret = of_property_read_u32(np, str, &temp_val);
@@ -463,7 +471,6 @@ static int pacfg_pulse_trig_init(struct snd_sunxi_pacfg *pa_cfg)
 	} else {
 		pulse_trig->period_cnt = temp_val;
 	}
-	gpio_direction_output(pulse_trig->pin, !pulse_trig->level);
 
 	return 0;
 }

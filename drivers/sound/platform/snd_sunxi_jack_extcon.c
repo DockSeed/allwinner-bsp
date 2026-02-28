@@ -345,7 +345,11 @@ static int sunxi_jack_typec_init(struct sunxi_jack_extcon *jack_extcon)
 			jack_typec_cfg->jack_pins[i].used = false;
 			continue;
 		}
-		ret = devm_gpio_request(&pdev->dev, temp_val, str);
+		ret = devm_gpio_request_one(
+			&pdev->dev,
+			temp_val, 
+			GPIOF_OUT_INIT_HIGH,
+			str);
 		if (ret) {
 			SND_LOG_ERR("%s (%u) request failed\n", str, temp_val);
 			jack_typec_cfg->jack_pins[i].used = false;
@@ -353,8 +357,6 @@ static int sunxi_jack_typec_init(struct sunxi_jack_extcon *jack_extcon)
 		}
 		jack_typec_cfg->jack_pins[i].used = true;
 		jack_typec_cfg->jack_pins[i].pin = temp_val;
-		/* pin default set to output */
-		gpio_direction_output(jack_typec_cfg->jack_pins[i].pin, 1);
 	}
 
 	jack_typec_cfg->modes_map = devm_kcalloc(&pdev->dev, SND_JACK_MODE_CNT,

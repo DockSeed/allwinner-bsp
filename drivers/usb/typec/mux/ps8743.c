@@ -394,8 +394,7 @@ static int ps8743_probe(struct i2c_client *client)
 		pr_warn("get hotplug pin for ps8743 failed, hotplug may be useless!\n");
 	} else {
 		/* init hotplug state to plugout */
-		devm_gpio_request(dev, pi->hpd_gpio, hpd_gpio_name);
-		gpio_direction_output(pi->hpd_gpio, PS8743_HOUTPLUG_OUT);
+		devm_gpio_request_one(dev, pi->hpd_gpio, GPIOF_OUT_INIT_LOW, hpd_gpio_name);
 	}
 	pi->hpd_status = false;
 	pi->hpd_status_pre = false;

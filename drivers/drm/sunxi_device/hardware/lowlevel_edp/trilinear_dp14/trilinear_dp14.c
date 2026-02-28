@@ -96,22 +96,22 @@ struct edp_audio_mn_aud aud_tbl[] = {
 	{ EDP_AUD_DEFINE(810, 192000, 2048, 16875) },
 };
 
-u32 TR_READ(struct sunxi_edp_hw_desc *edp_hw, u32 addr)
+static u32 TR_READ(struct sunxi_edp_hw_desc *edp_hw, u32 addr)
 {
 	return readl(edp_hw->reg_base + addr);
 }
 
-void TR_WRITE(struct sunxi_edp_hw_desc *edp_hw, u32 addr, u32 val)
+static void TR_WRITE(struct sunxi_edp_hw_desc *edp_hw, u32 addr, u32 val)
 {
 	writel(val, edp_hw->reg_base + addr);
 }
 
-u32 TR_TOP_READ(struct sunxi_edp_hw_desc *edp_hw, u32 addr)
+static u32 TR_TOP_READ(struct sunxi_edp_hw_desc *edp_hw, u32 addr)
 {
 	return readl(edp_hw->top_base + addr);
 }
 
-void TR_TOP_WRITE(struct sunxi_edp_hw_desc *edp_hw, u32 addr, u32 val)
+static void TR_TOP_WRITE(struct sunxi_edp_hw_desc *edp_hw, u32 addr, u32 val)
 {
 	writel(val, edp_hw->top_base + addr);
 }
@@ -146,12 +146,12 @@ static u32 TR_GET_BITS(struct sunxi_edp_hw_desc *edp_hw, u32 reg, u32 shift, u32
 
 /* must set to disable  before link training
  * and set to enable after link training */
-void trilinear_scrambling_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static void trilinear_scrambling_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 	TR_SET_BITS(edp_hw, TR_SCRAMBLING_DISABLE, 0, 1, enable ? 0x0 : 0x1);
 }
 
-void trilinear_mst_init(struct sunxi_edp_hw_desc *edp_hw, u32 mst_cnt)
+static void trilinear_mst_init(struct sunxi_edp_hw_desc *edp_hw, u32 mst_cnt)
 {
 	if (mst_cnt == 2)
 		TR_SET_BITS(edp_hw, TR_INPUT_SOURCE_ENABLE, 0, 3, 0x3);
@@ -161,7 +161,7 @@ void trilinear_mst_init(struct sunxi_edp_hw_desc *edp_hw, u32 mst_cnt)
 		TR_SET_BITS(edp_hw, TR_INPUT_SOURCE_ENABLE, 0, 3, 0x1);
 }
 
-void trilinear_sst_init(struct sunxi_edp_hw_desc *edp_hw)
+static void trilinear_sst_init(struct sunxi_edp_hw_desc *edp_hw)
 {
 	// set mst source channel, only use channel 0
 	TR_SET_BITS(edp_hw, TR_INPUT_SOURCE_ENABLE, 0, 3, 0x1);
@@ -170,7 +170,7 @@ void trilinear_sst_init(struct sunxi_edp_hw_desc *edp_hw)
 	TR_SET_BITS(edp_hw, TR_TRANSMITTER_OUTPUT_EN, 0, 1, 0x1);
 }
 
-void trilinear_fec_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static void trilinear_fec_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 
 	TR_SET_BITS(edp_hw, TR_FEC_ENABLE, 0, 1, enable ? 0x1 : 0x0);
@@ -178,12 +178,12 @@ void trilinear_fec_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 
 
 /* should use in HBR2 and intval should use the value read from DPCD_024A/024B */
-void edp_hbr2_scrambler_config(struct sunxi_edp_hw_desc *edp_hw, u32 intval)
+static void edp_hbr2_scrambler_config(struct sunxi_edp_hw_desc *edp_hw, u32 intval)
 {
 	TR_SET_BITS(edp_hw, TR_HBR2_SCRAMBLER_RESET, 0, 16, intval);
 }
 
-s32 trilinear_lane_remap_config(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, u32 remap_id)
+static s32 trilinear_lane_remap_config(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, u32 remap_id)
 {
 	// put remap config into phy driver
 	return RET_OK;
@@ -219,7 +219,7 @@ s32 trilinear_lane_remap_config(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, u
 }
 
 /* some markid should always invert because base-board lane has been inverted */
-s32 trilinear_lane_invert_config(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, bool invert)
+static s32 trilinear_lane_invert_config(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, bool invert)
 {
 	// put invert config into phy driver
 	return RET_OK;
@@ -251,7 +251,7 @@ s32 trilinear_lane_invert_config(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, 
  * dp mode lenth: 16
  * edp mode lenth: 8
  */
-void trilinear_aux_init(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static void trilinear_aux_init(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	u32 mode = edp_core->controller_mode;
 	// FIXME: 200 refer to raw code from SHC
@@ -295,7 +295,7 @@ static int edp_aux_reply_code(struct sunxi_edp_hw_desc *edp_hw)
 	return TR_READ(edp_hw, TR_AUX_REPLY_CODE);
 }
 
-int edp_wait_reply(struct sunxi_edp_hw_desc *edp_hw)
+static int edp_wait_reply(struct sunxi_edp_hw_desc *edp_hw)
 {
 	unsigned int count = 0;
 
@@ -319,7 +319,7 @@ int edp_wait_reply(struct sunxi_edp_hw_desc *edp_hw)
 	return RET_OK;
 }
 
-int edp_send_aux_request(struct sunxi_edp_hw_desc *edp_hw,
+static int edp_send_aux_request(struct sunxi_edp_hw_desc *edp_hw,
 			 struct edp_aux_request *request)
 {
 	unsigned int count = 0;
@@ -356,7 +356,7 @@ int edp_send_aux_request(struct sunxi_edp_hw_desc *edp_hw,
 	return RET_OK;
 }
 
-int edp_aux_read(struct sunxi_edp_hw_desc *edp_hw,
+static int edp_aux_read(struct sunxi_edp_hw_desc *edp_hw,
 		 u32 addr, u32 len, char *buf)
 {
 	struct edp_aux_request request;
@@ -405,7 +405,7 @@ OUT:
 	return ret;
 }
 
-int edp_aux_write(struct sunxi_edp_hw_desc *edp_hw,
+static int edp_aux_write(struct sunxi_edp_hw_desc *edp_hw,
 		  u32 addr, u32 len, char *buf)
 {
 	struct edp_aux_request request;
@@ -452,7 +452,7 @@ OUT:
 	return ret;
 }
 
-int edp_aux_i2c_read(struct sunxi_edp_hw_desc *edp_hw,
+static int edp_aux_i2c_read(struct sunxi_edp_hw_desc *edp_hw,
 		     u32 i2c_addr, u32 addr, u32 len, char *buf, bool mot)
 {
 	struct edp_aux_request request;
@@ -505,7 +505,7 @@ OUT:
 	return ret;
 }
 
-int edp_aux_i2c_write(struct sunxi_edp_hw_desc *edp_hw,
+static int edp_aux_i2c_write(struct sunxi_edp_hw_desc *edp_hw,
 		      u32 i2c_addr, u32 addr, u32 len, char *buf, bool mot)
 {
 	struct edp_aux_request request;
@@ -559,7 +559,7 @@ OUT:
 	return ret;
 }
 
-s32 trilinear_aux_read(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_aux_read(struct sunxi_edp_hw_desc *edp_hw,
 		     s32 addr, s32 len, char *buf)
 {
 	int ret = 0, j = 0;
@@ -606,7 +606,7 @@ s32 trilinear_aux_read(struct sunxi_edp_hw_desc *edp_hw,
 	return ret;
 }
 
-s32 trilinear_aux_write(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_aux_write(struct sunxi_edp_hw_desc *edp_hw,
 			s32 addr, s32 len, char *buf)
 {
 	int ret = 0, j = 0;
@@ -653,7 +653,7 @@ s32 trilinear_aux_write(struct sunxi_edp_hw_desc *edp_hw,
 	return ret;
 }
 
-s32 trilinear_aux_i2c_read(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_aux_i2c_read(struct sunxi_edp_hw_desc *edp_hw,
 			   s32 i2c_addr, s32 addr, s32 len, char *buf)
 {
 	struct edp_aux_request request;
@@ -732,7 +732,7 @@ s32 trilinear_aux_i2c_read(struct sunxi_edp_hw_desc *edp_hw,
 	return ret;
 }
 
-s32 trilinear_aux_i2c_write(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_aux_i2c_write(struct sunxi_edp_hw_desc *edp_hw,
 			    s32 i2c_addr, s32 addr, s32 len, char *buf)
 {
 	struct edp_aux_request request;
@@ -818,7 +818,7 @@ s32 trilinear_aux_i2c_write(struct sunxi_edp_hw_desc *edp_hw,
 	return ret;
 }
 
-s32 trilinear_read_edid_block(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_read_edid_block(struct sunxi_edp_hw_desc *edp_hw,
 			      u8 *raw_edid, unsigned int block_id, size_t len)
 {
 	unsigned int addr = block_id * EDID_LENGTH;
@@ -829,7 +829,7 @@ s32 trilinear_read_edid_block(struct sunxi_edp_hw_desc *edp_hw,
 }
 
 
-void trilinear_set_lane_rate(struct sunxi_edp_hw_desc *edp_hw, u64 bit_rate)
+static void trilinear_set_lane_rate(struct sunxi_edp_hw_desc *edp_hw, u64 bit_rate)
 {
 	switch (bit_rate) {
 	case BIT_RATE_1G62:
@@ -863,7 +863,7 @@ void trilinear_set_lane_rate(struct sunxi_edp_hw_desc *edp_hw, u64 bit_rate)
 	}
 }
 
-void trilinear_set_lane_cnt(struct sunxi_edp_hw_desc *edp_hw, u32 lane_cnt)
+static void trilinear_set_lane_cnt(struct sunxi_edp_hw_desc *edp_hw, u32 lane_cnt)
 {
 	if ((lane_cnt < 0) || (lane_cnt > 4)) {
 		EDP_WRN("unsupport lane number!\n");
@@ -886,7 +886,7 @@ void trilinear_set_lane_cnt(struct sunxi_edp_hw_desc *edp_hw, u32 lane_cnt)
 	}
 }
 
-void edp_set_secondary_data_window(struct sunxi_edp_hw_desc *edp_hw, u64 bit_rate, u32 pixel_clk)
+static void edp_set_secondary_data_window(struct sunxi_edp_hw_desc *edp_hw, u64 bit_rate, u32 pixel_clk)
 {
 	u32 window_size = 0;
 	u32 link_rate;
@@ -902,20 +902,20 @@ void edp_set_secondary_data_window(struct sunxi_edp_hw_desc *edp_hw, u64 bit_rat
 	TR_WRITE(edp_hw, TR_SRC0_SECOND_DATA_WINDOW, window_size);
 }
 
-void edp_video_stream_enable(struct sunxi_edp_hw_desc *edp_hw)
+static void edp_video_stream_enable(struct sunxi_edp_hw_desc *edp_hw)
 {
 	TR_SET_BITS(edp_hw, TR_VIDEO_STREAM_ENABLE, 0, 1, 0x1);
 	TR_SET_BITS(edp_hw, TR_SECOND_STREAM_ENABLE, 0, 1, 0x1);
 }
 
-void edp_video_stream_disable(struct sunxi_edp_hw_desc *edp_hw)
+static void edp_video_stream_disable(struct sunxi_edp_hw_desc *edp_hw)
 {
 	TR_SET_BITS(edp_hw, TR_VIDEO_STREAM_ENABLE, 0, 1, 0x0);
 //	TR_SET_BITS(edp_hw, TR_SECOND_STREAM_ENABLE, 0, 1, 0x0);
 }
 
-s32 trilinear_link_soft_reset(struct sunxi_edp_hw_desc *edp_hw);
-void trilinear_set_qual_pattern(struct sunxi_edp_hw_desc *edp_hw, u32 pattern, u32 lane_cnt)
+static s32 trilinear_link_soft_reset(struct sunxi_edp_hw_desc *edp_hw);
+static void trilinear_set_qual_pattern(struct sunxi_edp_hw_desc *edp_hw, u32 pattern, u32 lane_cnt)
 {
 	switch (lane_cnt) {
 	case 1:
@@ -943,22 +943,22 @@ static void trilinear_timer_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable
 		TR_SET_BITS(edp_hw, TR_GP_HOST_TIMER, 31, 1, 0x0);
 }
 
-void trilinear_timer_init(struct sunxi_edp_hw_desc *edp_hw)
+static void trilinear_timer_init(struct sunxi_edp_hw_desc *edp_hw)
 {
 	trilinear_timer_enable(edp_hw, false);
 }
 
-void trilinear_hpd_enable(struct sunxi_edp_hw_desc *edp_hw)
+static void trilinear_hpd_enable(struct sunxi_edp_hw_desc *edp_hw)
 {
 	TR_SET_BITS(edp_hw, TR_INTERRUPT_MASK, 0, 7, 0);
 }
 
-void trilinear_hpd_disable(struct sunxi_edp_hw_desc *edp_hw)
+static void trilinear_hpd_disable(struct sunxi_edp_hw_desc *edp_hw)
 {
 	TR_SET_BITS(edp_hw, TR_INTERRUPT_MASK, 0, 7, 0x7ff);
 }
 
-bool trilinear_get_hotplug_change(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_get_hotplug_change(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u32 reg_val = 0;
 
@@ -971,7 +971,7 @@ bool trilinear_get_hotplug_change(struct sunxi_edp_hw_desc *edp_hw)
 	return false;
 }
 
-s32 trilinear_get_hotplug_state(struct sunxi_edp_hw_desc *edp_hw)
+static s32 trilinear_get_hotplug_state(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u32 reg_val = 0;
 
@@ -984,7 +984,7 @@ s32 trilinear_get_hotplug_state(struct sunxi_edp_hw_desc *edp_hw)
 	return 0;
 }
 
-void trilinear_irq_handler(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static void trilinear_irq_handler(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	u32 reg_val = 0;
 
@@ -992,13 +992,13 @@ void trilinear_irq_handler(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core 
 	reg_val = TR_READ(edp_hw, TR_INTERRUPT_CAUSE);
 }
 
-void trilinear_set_training_pattern(struct sunxi_edp_hw_desc *edp_hw,
+static void trilinear_set_training_pattern(struct sunxi_edp_hw_desc *edp_hw,
 				    u32 pattern)
 {
 	TR_SET_BITS(edp_hw, TR_TRAINING_PATTERN_SET, 0, 3, pattern);
 }
 
-void trilinear_dsc_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static void trilinear_dsc_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 	if (enable)
 		TR_SET_BITS(edp_hw, TR_DSC_COMPRESSION_EN, 0, 1, 0x1);
@@ -1066,21 +1066,21 @@ static void trilinear_audio_set_data_rate(struct sunxi_edp_hw_desc *edp_hw, int 
 	trilinear_audio_set_mn_aud(edp_hw, link_bw, audio_data_rate);
 }
 
-s32 trilinear_audio_enable(struct sunxi_edp_hw_desc *edp_hw)
+static s32 trilinear_audio_enable(struct sunxi_edp_hw_desc *edp_hw)
 {
 	TR_SET_BITS(edp_hw, TR_SEC0_AUDIO_ENABLE, 0, 1, 0x1);
 
 	return RET_OK;
 }
 
-s32 trilinear_audio_disable(struct sunxi_edp_hw_desc *edp_hw)
+static s32 trilinear_audio_disable(struct sunxi_edp_hw_desc *edp_hw)
 {
 	TR_SET_BITS(edp_hw, TR_SEC0_AUDIO_ENABLE, 1, 1, 0x1);
 
 	return RET_OK;
 }
 
-s32 trilinear_audio_mute(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_audio_mute(struct sunxi_edp_hw_desc *edp_hw,
 			 bool enable, int direction)
 {
 	TR_SET_BITS(edp_hw, TR_SEC0_AUDIO_ENABLE, 1, 1, enable ? 0x1 : 0x0);
@@ -1088,7 +1088,7 @@ s32 trilinear_audio_mute(struct sunxi_edp_hw_desc *edp_hw,
 	return RET_OK;
 }
 
-s32 trilinear_audio_config(struct sunxi_edp_hw_desc *edp_hw, int interface,
+static s32 trilinear_audio_config(struct sunxi_edp_hw_desc *edp_hw, int interface,
 		      int chn_cnt, int data_width, int data_rate)
 {
 	trilinear_audio_set_interface(edp_hw, interface);
@@ -1098,7 +1098,7 @@ s32 trilinear_audio_config(struct sunxi_edp_hw_desc *edp_hw, int interface,
 	return RET_OK;
 }
 
-bool trilinear_audio_is_enabled(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_audio_is_enabled(struct sunxi_edp_hw_desc *edp_hw)
 {
 	int reg_val = 0;
 
@@ -1107,7 +1107,7 @@ bool trilinear_audio_is_enabled(struct sunxi_edp_hw_desc *edp_hw)
 	return reg_val ? true : false;
 }
 
-u32 trilinear_get_audio_if(struct sunxi_edp_hw_desc *edp_hw)
+static u32 trilinear_get_audio_if(struct sunxi_edp_hw_desc *edp_hw)
 {
 	int reg_val = 0;
 
@@ -1124,7 +1124,7 @@ u32 trilinear_get_audio_if(struct sunxi_edp_hw_desc *edp_hw)
 	return 1;
 }
 
-bool trilinear_audio_is_muted(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_audio_is_muted(struct sunxi_edp_hw_desc *edp_hw)
 {
 	int reg_val = 0;
 
@@ -1133,12 +1133,12 @@ bool trilinear_audio_is_muted(struct sunxi_edp_hw_desc *edp_hw)
 	return reg_val ? true : false;
 }
 
-u32 trilinear_get_audio_max_channel(struct sunxi_edp_hw_desc *edp_hw)
+static u32 trilinear_get_audio_max_channel(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return 8;
 }
 
-u32 trilinear_get_audio_chn_cnt(struct sunxi_edp_hw_desc *edp_hw)
+static u32 trilinear_get_audio_chn_cnt(struct sunxi_edp_hw_desc *edp_hw)
 {
 	int reg_val = 0;
 
@@ -1156,31 +1156,31 @@ u32 trilinear_get_audio_chn_cnt(struct sunxi_edp_hw_desc *edp_hw)
 	return 0;
 }
 
-u32 trilinear_get_audio_date_width(struct sunxi_edp_hw_desc *edp_hw)
+static u32 trilinear_get_audio_date_width(struct sunxi_edp_hw_desc *edp_hw)
 {
 	//TODO
 	return 0;
 }
 
 
-void edp_controller_soft_reset(struct sunxi_edp_hw_desc *edp_hw)
+static void edp_controller_soft_reset(struct sunxi_edp_hw_desc *edp_hw)
 {
 //	TR_SET_BITS(edp_hw, TR_SOFT_RESET, 4, 1, 0x1);
 //	TR_SET_BITS(edp_hw, TR_SOFT_RESET, 0, 1, 0x1);
 //	TR_CLR_BITS(edp_hw, TR_TRANSMITTER_OUTPUT_EN, 0, 1);
 }
 
-s32 trilinear_irq_enable(struct sunxi_edp_hw_desc *edp_hw, u32 irq_id)
+static s32 trilinear_irq_enable(struct sunxi_edp_hw_desc *edp_hw, u32 irq_id)
 {
 	return 0;
 }
 
-s32 trilinear_irq_disable(struct sunxi_edp_hw_desc *edp_hw, u32 irq_id)
+static s32 trilinear_irq_disable(struct sunxi_edp_hw_desc *edp_hw, u32 irq_id)
 {
 	return 0;
 }
 
-s32 trilinear_transfer_unit_config(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_transfer_unit_config(struct sunxi_edp_hw_desc *edp_hw,
 			     u32 bpp, u32 lane_cnt, u64 bit_rate, u32 pixel_clk)
 {
 	u32 bw = 0;
@@ -1203,20 +1203,20 @@ s32 trilinear_transfer_unit_config(struct sunxi_edp_hw_desc *edp_hw,
 	return RET_OK;
 }
 
-s32 trilinear_init_early(struct sunxi_edp_hw_desc *edp_hw)
+static s32 trilinear_init_early(struct sunxi_edp_hw_desc *edp_hw)
 {
 	mutex_init(&edp_hw->aux_lock);
 
 	return RET_OK;
 }
 
-void trilinear_top_init(struct sunxi_edp_hw_desc *edp_hw)
+static void trilinear_top_init(struct sunxi_edp_hw_desc *edp_hw)
 {
 	TR_TOP_WRITE(edp_hw, 0x0, 0x1);
 	TR_TOP_WRITE(edp_hw, 0x4, 0x1);
 }
 
-s32 trilinear_controller_init(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_controller_init(struct sunxi_edp_hw_desc *edp_hw,
 			      struct edp_tx_core *edp_core)
 {
 	s32 ret = 0;
@@ -1233,30 +1233,30 @@ s32 trilinear_controller_init(struct sunxi_edp_hw_desc *edp_hw,
 	return ret;
 }
 
-s32 trilinear_enable(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_enable(struct sunxi_edp_hw_desc *edp_hw,
 		     struct edp_tx_core *edp_core)
 {
 	return RET_OK;
 }
 
-s32 trilinear_disable(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static s32 trilinear_disable(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	edp_video_stream_disable(edp_hw);
 
 	return 0;
 }
 
-u64 trilinear_get_max_rate(struct sunxi_edp_hw_desc *edp_hw)
+static u64 trilinear_get_max_rate(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return BIT_RATE_5G4;
 }
 
-u32 trilinear_get_max_lane(struct sunxi_edp_hw_desc *edp_hw)
+static u32 trilinear_get_max_lane(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return 4;
 }
 
-void trilinear_set_video_timestamp(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static void trilinear_set_video_timestamp(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	/* set MVID */
 	// not sure divide 1000 or 100000, spec seems conflict
@@ -1266,7 +1266,7 @@ void trilinear_set_video_timestamp(struct sunxi_edp_hw_desc *edp_hw, struct edp_
 	TR_SET_BITS(edp_hw, TR_SRC0_NVID, 0, 24, edp_core->lane_para.bit_rate / 10000);
 }
 
-s32 trilinear_set_misc(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static s32 trilinear_set_misc(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	u32 colordepth = edp_core->lane_para.colordepth;
 	u32 color_fmt = edp_core->lane_para.color_fmt;
@@ -1333,7 +1333,7 @@ s32 trilinear_set_misc(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp
 	return RET_OK;
 }
 
-s32 trilinear_set_pixel_mode(struct sunxi_edp_hw_desc *edp_hw, u32 pixel_cnt)
+static s32 trilinear_set_pixel_mode(struct sunxi_edp_hw_desc *edp_hw, u32 pixel_cnt)
 {
 	u32 pixel_count = pixel_cnt;
 
@@ -1351,7 +1351,7 @@ s32 trilinear_set_pixel_mode(struct sunxi_edp_hw_desc *edp_hw, u32 pixel_cnt)
 	return RET_OK;
 }
 
-u32 trilinear_get_pixel_mode(struct sunxi_edp_hw_desc *edp_hw)
+static u32 trilinear_get_pixel_mode(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u32 reg_val;
 
@@ -1360,7 +1360,7 @@ u32 trilinear_get_pixel_mode(struct sunxi_edp_hw_desc *edp_hw)
 	return reg_val;
 }
 
-s32 trilinear_set_video_data_count(struct sunxi_edp_hw_desc *edp_hw, u32 hres, u32 bpp, u32 lane_cnt)
+static s32 trilinear_set_video_data_count(struct sunxi_edp_hw_desc *edp_hw, u32 hres, u32 bpp, u32 lane_cnt)
 {
 	u32 symbol_cnt = 0;
 	u32 data_cnt = 0;
@@ -1373,7 +1373,7 @@ s32 trilinear_set_video_data_count(struct sunxi_edp_hw_desc *edp_hw, u32 hres, u
 	return RET_OK;
 }
 
-s32 trilinear_set_video_interlace(struct sunxi_edp_hw_desc *edp_hw, bool interlace)
+static s32 trilinear_set_video_interlace(struct sunxi_edp_hw_desc *edp_hw, bool interlace)
 {
 	TR_SET_BITS(edp_hw, TR_SRC0_MAIN_STREAM_INTERLACE, 0, 1,
 		    interlace ? 0x1 : 0x0);
@@ -1381,7 +1381,7 @@ s32 trilinear_set_video_interlace(struct sunxi_edp_hw_desc *edp_hw, bool interla
 	return RET_OK;
 }
 
-s32 trilinear_set_video_format(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static s32 trilinear_set_video_format(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	s32 ret = 0;
 	u32 lane_cnt = edp_core->lane_para.lane_cnt;
@@ -1405,7 +1405,7 @@ s32 trilinear_set_video_format(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_c
 	return RET_OK;
 }
 
-s32 trilinear_set_video_timings(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_set_video_timings(struct sunxi_edp_hw_desc *edp_hw,
 				struct disp_video_timings *timings)
 {
 	/* set horizon timings */
@@ -1427,7 +1427,7 @@ s32 trilinear_set_video_timings(struct sunxi_edp_hw_desc *edp_hw,
 	return RET_OK;
 }
 
-s32 trilinear_set_transfer_config(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_set_transfer_config(struct sunxi_edp_hw_desc *edp_hw,
 				  struct edp_tx_core *edp_core)
 {
 	struct disp_video_timings *tmgs = &edp_core->timings;
@@ -1446,39 +1446,39 @@ s32 trilinear_set_transfer_config(struct sunxi_edp_hw_desc *edp_hw,
 	return RET_OK;
 }
 
-void trilinear_crc_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static void trilinear_crc_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 	TR_SET_BITS(edp_hw, TR_SRC0_EDP_CRC_ENABLE, 0, 1, enable ? 0x1 : 0x0);
 }
 
-void trilinear_psr_vsc_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static void trilinear_psr_vsc_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 	TR_SET_BITS(edp_hw, TR_SRC0_PSR_3D_ENABLE, 0, 1, enable ? 0x1 : 0x0);
 }
 
-void trilinear_psr_capture_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static void trilinear_psr_capture_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 	TR_SET_BITS(edp_hw, TR_SRC0_PSR_STATE, 0, 1, enable ? 0x1 : 0x0);
 	TR_SET_BITS(edp_hw, TR_SRC0_PSR_STATE, 1, 1, enable ? 0x1 : 0x0);
 }
 
-void trilinear_psr2_capture_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static void trilinear_psr2_capture_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 	TR_SET_BITS(edp_hw, TR_SRC0_PSR_STATE, 0, 1, enable ? 0x1 : 0x0);
 	TR_SET_BITS(edp_hw, TR_SRC0_PSR_STATE, 1, 1, enable ? 0x1 : 0x0);
 	TR_SET_BITS(edp_hw, TR_SRC0_PSR_STATE, 2, 1, enable ? 0x1 : 0x0);
 }
 
-s32 trilinear_psr_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static s32 trilinear_psr_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 	/* not sure if VSC is need for PSR1 */
-	//trilinear_psr_vsc_enable(edp_hw, enable);
+	// trilinear_psr_vsc_enable(edp_hw, enable);
 	trilinear_crc_enable(edp_hw, enable);
 	trilinear_psr_capture_enable(edp_hw, enable);
 	return RET_OK;
 }
 
-bool trilinear_psr_is_enabled(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_psr_is_enabled(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u32 reg_val = 0;
 	u32 reg_val1 = 0;
@@ -1492,7 +1492,7 @@ bool trilinear_psr_is_enabled(struct sunxi_edp_hw_desc *edp_hw)
 		return false;
 }
 
-bool trilinear_psr2_is_enabled(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_psr2_is_enabled(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u32 reg_val = 0;
 	u32 reg_val1 = 0;
@@ -1508,7 +1508,7 @@ bool trilinear_psr2_is_enabled(struct sunxi_edp_hw_desc *edp_hw)
 		return false;
 }
 
-void trilinear_psr2_set_area(struct sunxi_edp_hw_desc *edp_hw,
+static void trilinear_psr2_set_area(struct sunxi_edp_hw_desc *edp_hw,
 			     u32 top, u32 bot, u32 left, u32 width)
 {
 	TR_SET_BITS(edp_hw, TR_PSR2_UPDATE_TOP, 0, 16, top);
@@ -1517,28 +1517,28 @@ void trilinear_psr2_set_area(struct sunxi_edp_hw_desc *edp_hw,
 	TR_SET_BITS(edp_hw, TR_PSR2_UPDATE_WIDTH, 0, 16, width);
 }
 
-void trilinear_psr2_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static void trilinear_psr2_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 	trilinear_psr_vsc_enable(edp_hw, enable);
 	trilinear_crc_enable(edp_hw, enable);
 	trilinear_psr2_capture_enable(edp_hw, enable);
 }
 
-s32 trilinear_assr_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static s32 trilinear_assr_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 	TR_SET_BITS(edp_hw, TR_CAPBILITY_CONFIG, 0, 1, enable ? 1 : 0);
 
 	return RET_OK;
 }
 
-void edp_set_80bit_pattern(struct sunxi_edp_hw_desc *edp_hw)
+static void edp_set_80bit_pattern(struct sunxi_edp_hw_desc *edp_hw)
 {
 	TR_WRITE(edp_hw, TR_80BIT_PATTERN_0_31, 0x3E0F83E0);
 	TR_WRITE(edp_hw, TR_80BIT_PATTERN_32_63, 0x0F83E0F8);
 	TR_WRITE(edp_hw, TR_80BIT_PATTERN_64_79, 0xF83E);
 }
 
-s32 trilinear_set_pattern(struct sunxi_edp_hw_desc *edp_hw, u32 pattern, u32 lane_cnt)
+static s32 trilinear_set_pattern(struct sunxi_edp_hw_desc *edp_hw, u32 pattern, u32 lane_cnt)
 {
 	switch (pattern) {
 	case D10_2:
@@ -1570,7 +1570,7 @@ s32 trilinear_set_pattern(struct sunxi_edp_hw_desc *edp_hw, u32 pattern, u32 lan
 	return RET_OK;
 }
 
-s32 trilinear_get_color_fmt(struct sunxi_edp_hw_desc *edp_hw)
+static s32 trilinear_get_color_fmt(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u32 color_depth;
 	u32 format;
@@ -1630,7 +1630,7 @@ s32 trilinear_get_color_fmt(struct sunxi_edp_hw_desc *edp_hw)
 }
 
 
-u32 trilinear_get_pixclk(struct sunxi_edp_hw_desc *edp_hw)
+static u32 trilinear_get_pixclk(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u32 pixclk;
 	u32 reg_val;
@@ -1642,7 +1642,7 @@ u32 trilinear_get_pixclk(struct sunxi_edp_hw_desc *edp_hw)
 }
 
 
-u32 trilinear_get_pattern(struct sunxi_edp_hw_desc *edp_hw)
+static u32 trilinear_get_pattern(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u32 reg_val;
 	u32 pattern_lane;
@@ -1688,7 +1688,7 @@ u32 trilinear_get_pattern(struct sunxi_edp_hw_desc *edp_hw)
 	return PATTERN_NONE;
 }
 
-s32 trilinear_get_lane_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_lane_para *tmp_lane_para)
+static s32 trilinear_get_lane_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_lane_para *tmp_lane_para)
 {
 	u32 reg_val;
 
@@ -1735,12 +1735,12 @@ s32 trilinear_get_lane_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_lane_pa
 	return RET_OK;
 }
 
-u32 trilinear_get_tu_size(struct sunxi_edp_hw_desc *edp_hw)
+static u32 trilinear_get_tu_size(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return LS_PER_TU;
 }
 
-u32 trilinear_get_tu_valid_symbol(struct sunxi_edp_hw_desc *edp_hw)
+static u32 trilinear_get_tu_valid_symbol(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u32 symbol_frac = 0;
 	u32 symbol = 0;
@@ -1753,34 +1753,34 @@ u32 trilinear_get_tu_valid_symbol(struct sunxi_edp_hw_desc *edp_hw)
 	return count;
 }
 
-s32 trilinear_link_soft_reset(struct sunxi_edp_hw_desc *edp_hw)
+static s32 trilinear_link_soft_reset(struct sunxi_edp_hw_desc *edp_hw)
 {
 	TR_SET_BITS(edp_hw, TR_SOFT_RESET, 4, 1, 0x1);
 	msleep(5);
 	return RET_OK;
 }
 
-s32 trilinear_video_soft_reset(struct sunxi_edp_hw_desc *edp_hw)
+static s32 trilinear_video_soft_reset(struct sunxi_edp_hw_desc *edp_hw)
 {
 	TR_SET_BITS(edp_hw, TR_SOFT_RESET, 0, 1, 0x1);
 	msleep(5);
 	return RET_OK;
 }
 
-s32 trilinear_link_start(struct sunxi_edp_hw_desc *edp_hw)
+static s32 trilinear_link_start(struct sunxi_edp_hw_desc *edp_hw)
 {
 	edp_video_stream_enable(edp_hw);
 	return RET_OK;
 }
 
-s32 trilinear_link_stop(struct sunxi_edp_hw_desc *edp_hw)
+static s32 trilinear_link_stop(struct sunxi_edp_hw_desc *edp_hw)
 {
 	edp_video_stream_disable(edp_hw);
 
 	return RET_OK;
 }
 
-s32 trilinear_query_transfer_unit(struct sunxi_edp_hw_desc *edp_hw,
+static s32 trilinear_query_transfer_unit(struct sunxi_edp_hw_desc *edp_hw,
 				  struct edp_tx_core *edp_core,
 				struct disp_video_timings *tmgs)
 {
@@ -1826,96 +1826,96 @@ s32 trilinear_query_transfer_unit(struct sunxi_edp_hw_desc *edp_hw,
 }
 
 
-void trilinear_set_lane_sw_pre(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, u32 sw, u32 pre, u32 param_type)
+static void trilinear_set_lane_sw_pre(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, u32 sw, u32 pre, u32 param_type)
 {
 }
 
-bool trilinear_support_tps3(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_tps3(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_fast_train(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_fast_train(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return false;
 }
 
-bool trilinear_support_audio(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_audio(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_psr(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_psr(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_psr2(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_psr2(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_ssc(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_ssc(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_assr(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_assr(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_mst(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_mst(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return false;
 }
 
-bool trilinear_support_fec(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_fec(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_lane_remap(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_lane_remap(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_lane_invert(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_lane_invert(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_hdcp1x(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_hdcp1x(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_hardware_hdcp1x(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_hardware_hdcp1x(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return false;
 }
 
-bool trilinear_support_hdcp2x(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_hdcp2x(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_hardware_hdcp2x(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_hardware_hdcp2x(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return false;
 }
 
-bool trilinear_support_enhance_frame(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_enhance_frame(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_support_muti_pixel_mode(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_support_muti_pixel_mode(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
 
-bool trilinear_need_reset_before_enable(struct sunxi_edp_hw_desc *edp_hw)
+static bool trilinear_need_reset_before_enable(struct sunxi_edp_hw_desc *edp_hw)
 {
 	return true;
 }
@@ -2005,7 +2005,7 @@ struct sunxi_edp_hw_audio_ops *sunxi_edp_get_hw_audio_ops(void)
 	return &trilinear_dp14_audio_ops;
 }
 
-void trilinear_hdcp_set_mode(struct sunxi_edp_hw_desc *edp_hw,
+static void trilinear_hdcp_set_mode(struct sunxi_edp_hw_desc *edp_hw,
 			     enum dp_hdcp_mode mode)
 {
 	if (mode == HDCP14_MODE)
@@ -2016,7 +2016,7 @@ void trilinear_hdcp_set_mode(struct sunxi_edp_hw_desc *edp_hw,
 		TR_SET_BITS(edp_hw, TR_HDCP_MODE, 0, 2, 0x0);
 }
 
-void trilinear_hdcp_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static void trilinear_hdcp_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 	if (enable)
 		TR_SET_BITS(edp_hw, TR_HDCP_ENABLE, 0, 1, 0x1);
@@ -2024,7 +2024,7 @@ void trilinear_hdcp_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 		TR_SET_BITS(edp_hw, TR_HDCP_ENABLE, 0, 1, 0x0);
 }
 
-u64 trilinear_hdcp1_get_aksv(struct sunxi_edp_hw_desc *edp_hw)
+static u64 trilinear_hdcp1_get_aksv(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u64 aksv = 0;
 
@@ -2034,7 +2034,7 @@ u64 trilinear_hdcp1_get_aksv(struct sunxi_edp_hw_desc *edp_hw)
 	return aksv;
 }
 
-u64 trilinear_hdcp1_get_an(struct sunxi_edp_hw_desc *edp_hw)
+static u64 trilinear_hdcp1_get_an(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u64 an = 0;
 	u32 an_l32 = 0;
@@ -2054,7 +2054,7 @@ u64 trilinear_hdcp1_get_an(struct sunxi_edp_hw_desc *edp_hw)
 	return an;
 }
 
-void trilinear_hdcp_encrypt_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
+static void trilinear_hdcp_encrypt_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 {
 	if (enable) {
 		TR_SET_BITS(edp_hw, TR_HDCP_STREAM_CIPGER_EN, 0, 1, 0x1);
@@ -2063,7 +2063,7 @@ void trilinear_hdcp_encrypt_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable
 		TR_SET_BITS(edp_hw, TR_HDCP_STREAM_CIPGER_EN, 0, 1, 0x0);
 }
 
-void trilinear_hdcp1_write_bksv(struct sunxi_edp_hw_desc *edp_hw, u64 bksv)
+static void trilinear_hdcp1_write_bksv(struct sunxi_edp_hw_desc *edp_hw, u64 bksv)
 {
 	/*
 	 * do nothing, because in trilinear, km would be caculated
@@ -2071,7 +2071,7 @@ void trilinear_hdcp1_write_bksv(struct sunxi_edp_hw_desc *edp_hw, u64 bksv)
 	 * */
 }
 
-u64 trilinear_hdcp1_cal_km(struct sunxi_edp_hw_desc *edp_hw, u64 bksv)
+static u64 trilinear_hdcp1_cal_km(struct sunxi_edp_hw_desc *edp_hw, u64 bksv)
 {
 	TR_SET_BITS(edp_hw, TR_HDCP_CIPHER_CONTROL, 0, 1, 0x1);
 	TR_WRITE(edp_hw, TR_HDCP_BKSV_31_0, (u32)(bksv & 0xffffffff));
@@ -2083,7 +2083,7 @@ u64 trilinear_hdcp1_cal_km(struct sunxi_edp_hw_desc *edp_hw, u64 bksv)
 	return 1442;
 }
 
-u32 trilinear_hdcp1_cal_r0(struct sunxi_edp_hw_desc *edp_hw, u64 an, u64 km)
+static u32 trilinear_hdcp1_cal_r0(struct sunxi_edp_hw_desc *edp_hw, u64 an, u64 km)
 {
 	u32 timeout = 50000;
 	u32 reg_val = 0;
@@ -2109,7 +2109,7 @@ u32 trilinear_hdcp1_cal_r0(struct sunxi_edp_hw_desc *edp_hw, u64 an, u64 km)
 	return r0;
 }
 
-u64 trilinear_hdcp1_get_m0(struct sunxi_edp_hw_desc *edp_hw)
+static u64 trilinear_hdcp1_get_m0(struct sunxi_edp_hw_desc *edp_hw)
 {
 	u64 m0 = 0;
 

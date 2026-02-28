@@ -126,7 +126,7 @@ static void dptx_hdcp_hw_enable(struct sunxi_edp_hw_desc *edp_hw, bool enable)
 		ops->hdcp_enable(edp_hw, enable);
 }
 
-void dptx_hdcp_hw_set_mode(struct sunxi_edp_hw_desc *edp_hw, enum dp_hdcp_mode mode)
+static void dptx_hdcp_hw_set_mode(struct sunxi_edp_hw_desc *edp_hw, enum dp_hdcp_mode mode)
 {
 	struct sunxi_edp_hw_hdcp_ops *ops = edp_hw->hdcp_ops;
 
@@ -136,8 +136,6 @@ void dptx_hdcp_hw_set_mode(struct sunxi_edp_hw_desc *edp_hw, enum dp_hdcp_mode m
 	if (ops->hdcp_set_mode)
 		ops->hdcp_set_mode(edp_hw, mode);
 }
-
-
 
 static bool hdcp1_status_success(struct sunxi_dptx_hdcp1_info *info)
 {
@@ -530,7 +528,7 @@ static void sunxi_dp_hdcp1_encrypt_enable(struct sunxi_dptx_hdcp1_info *info, bo
 	dptx_hdcp1_hw_encrypt_enable(hdcp->edp_hw, enable);
 }
 
-s32 sunxi_dp_hdcp1_auth(struct sunxi_dp_hdcp *hdcp)
+static s32 sunxi_dp_hdcp1_auth(struct sunxi_dp_hdcp *hdcp)
 {
 	struct sunxi_dptx_hdcp1_info *info = &hdcp->hdcp1_info;
 	s32 ret = RET_OK;
@@ -715,7 +713,7 @@ s32 sunxi_dp_hdcp1_auth(struct sunxi_dp_hdcp *hdcp)
 	return ret;
 }
 
-void sunxi_dp_hdcp1_clear_info(struct sunxi_dptx_hdcp1_info *info)
+static void sunxi_dp_hdcp1_clear_info(struct sunxi_dptx_hdcp1_info *info)
 {
 	memset(info, 0, sizeof(struct sunxi_dptx_hdcp1_info));
 }

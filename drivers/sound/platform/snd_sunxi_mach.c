@@ -56,11 +56,13 @@ static int asoc_simple_startup(struct snd_pcm_substream *substream)
     ret = snd_pcm_hw_constraint_list(substream->runtime, 0,
                      SNDRV_PCM_HW_PARAM_RATE,
                      &sunxi_pcm_rate_constraints);
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+	}
 
-	if (priv->wait_time)
+	if (priv->wait_time) {
 		sunxi_adpt_wait_time_conv(substream, priv->wait_time);
+	}
 	
 	return 0;
 }
@@ -1040,8 +1042,6 @@ err:
 
 static void asoc_simple_remove(struct platform_device *pdev)
 {
-	struct snd_soc_card *card = platform_get_drvdata(pdev);
-
 	SND_LOG_DEBUG("\n");
 }
 
