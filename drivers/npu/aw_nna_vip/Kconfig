@@ -11,10 +11,6 @@ config AW_NNA_VIP
 choice
 	prompt "Select driver version"
 	depends on (AW_NNA_VIP)
-	config NNA_VIP1
-		bool "vip version 1"
-		help
-		 This is vip version 1
 	config NNA_VIP2
 		bool "vip version 2"
 		help
@@ -34,10 +30,6 @@ config NPU_SET_CLK_VOL
 	default n
 	help
 	 Choose M to enable NPU Set Clk Vol
-
-#if NNA_VIP1
-#source "$(BSP_TOP)drivers/npu/aw_nna_vip/vip1/Kconfig"
-#endif
 
 #if NNA_VIP2
 #source "$(BSP_TOP)drivers/npu/aw_nna_vip/vip2/Kconfig"
