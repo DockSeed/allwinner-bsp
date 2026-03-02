@@ -8,7 +8,7 @@
 
 #include "sunxi-power-temp-ctrl.h"
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 99)) && IS_ENABLED(CONFIG_THERMAL)
+#if IS_ENABLED(CONFIG_THERMAL)
 /* thermal cooling device callbacks */
 static int ps_get_max_charge_cntl_limit(struct thermal_cooling_device *tcd,
 					unsigned long *state)
@@ -70,7 +70,7 @@ static const struct thermal_cooling_device_ops psy_tcd_ops = {
 int sunxi_power_register_cooler(struct power_supply *psy)
 {
 	psy->tcd = devm_thermal_of_cooling_device_register(&psy->dev,
-		psy->of_node, (char *)psy->desc->name, psy, &psy_tcd_ops);
+		psy->dev.of_node, (char *)psy->desc->name, psy, &psy_tcd_ops);
 
 	return PTR_ERR_OR_ZERO(psy->tcd);
 }

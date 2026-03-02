@@ -40,6 +40,14 @@
 #define HUSB311_REG_DRP_TOGGLE_CYCLE		0xA2
 #define HUSB311_REG_DRP_DUTY_CTRL		0xA3
 
+#define TCPC_ROLE_CTRL_RP_VAL_SHIFT	4
+#define TCPC_ROLE_CTRL_CC2_SHIFT	2
+#define TCPC_ROLE_CTRL_CC2_MASK		0x3
+#define TCPC_ROLE_CTRL_CC1_SHIFT	0
+#define TCPC_ROLE_CTRL_CC1_MASK		0x3
+#define TCPC_TRANSMIT_RETRY_SHIFT	4
+#define TCPC_TRANSMIT_TYPE_SHIFT	0
+
 #define TCPC_CMD_RESETTRANSMITBUFFER		0xDD
 #define TCPC_ROLE_CTRL_SET(drp, rp, cc1, cc2) \
 	((drp) << 6 | (rp) << 4 | (cc2) << 2 | (cc1))
@@ -407,7 +415,7 @@ static void husb311_init_tcpci_data_late(struct husb311_chip *chip)
 	np = of_parse_phandle(chip->dev->of_node, "det_usb_supply", 0);
 	if (np) {
 		if (of_property_read_u32(np, "pmu_usbad_cur", &pmu_usbad_cur)) {
-			np = of_parse_phandle(chip->usb_psy->of_node, "det_usb_supply", 0);
+			np = of_parse_phandle(chip->usb_psy->dev.of_node, "det_usb_supply", 0);
 			if (np) {
 				if (of_property_read_u32(np, "pmu_usbad_cur", &pmu_usbad_cur))
 					pmu_usbad_cur = 0;
@@ -547,13 +555,15 @@ static int husb311_init_gpio_optional(struct i2c_client *client)
 	}
 	gpio_int_n = ret;
 
-	ret = devm_gpio_request(dev, gpio_int_n, "power_gpios");
+	ret = devm_gpio_request_one(
+		dev, 
+		gpio_int_n, 
+		GPIOF_OUT_INIT_HIGH,
+		"power_gpios");
 	if (ret < 0) {
 		dev_err(dev, "failed to request GPIO%d (ret = %d)\n", gpio_int_n, ret);
 		return ret;
 	}
-	/* power on avoid i2c bus is stuck low. */
-	gpio_direction_output(gpio_int_n, 1);
 
 	gpio_free(gpio_int_n);
 

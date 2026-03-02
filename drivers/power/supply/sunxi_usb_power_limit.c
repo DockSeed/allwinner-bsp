@@ -825,7 +825,7 @@ static int sunxi_usb_power_limit_parse_device_tree(struct sunxi_usb_power_limit_
 
 	psy = power_limit->power_psy[SUNXI_SUPPLY_LIST_USB_POWER].psy;
 
-	np = of_parse_phandle(psy->of_node, "det_usb_supply", 0);
+	np = of_parse_phandle(psy->dev.of_node, "det_usb_supply", 0);
 	if (np) {
 		ret = sunxi_usb_power_limit_dt_parse(np, power_limit_config);
 		if (ret) {
