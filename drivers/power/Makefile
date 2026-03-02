@@ -42,9 +42,6 @@ obj-$(CONFIG_AW_REGULATOR_VIRTUAL_CONSUMER) 	+= regulator/sunxi_virtual_consumer
 
 # type-c
 obj-$(CONFIG_AW_TYPEC_HUSB311)		+= typec/tcpci_husb311.o
-obj-$(CONFIG_AW_TYPEC_AXP517)		+= typec/sunxi_tcpci/tcpci_axp517.o
-obj-$(CONFIG_AW_TYPEC_AXP517)		+= typec/sunxi_tcpci/tcpci_axp517_core.o
-obj-$(CONFIG_AW_TYPEC_CC_LOGIC)			+= typec/sunxi_cc_logic/sunxi_cc_logic.o
 
 # supply-core
 obj-$(CONFIG_AW_POWER_SUPPLY_CTRL)		+= supply/sunxi_power_supply_core.o

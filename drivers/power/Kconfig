@@ -346,26 +346,4 @@ config AW_TYPEC_HUSB311
 
 	  If unsure, say N.
 
-config AW_TYPEC_AXP517
-	tristate "Allwinner AXP517 Type-C chip driver"
-	depends on AW_MFD_AXP2101
-	select TYPEC_TCPM
-	select USB_SUNXI_TYPEC
-	select AW_POWER_NOTIFIER
-	help
-	  Allwinner AXP517 Type-C chip driver that works with
-	  Type-C Port Controller Manager to provide USB PD and USB
-	  Type-C functionalities.
-
-	  If unsure, say N.
-
-config AW_TYPEC_CC_LOGIC
-	tristate "Allwinner PMIC USB Type-C Port Manager Driver Support"
-	depends on AW_MFD_AXP2101
-	select AW_POWER_DEBUG
-	help
-	  Allwinner Type-C Port Manager Driver Based on PMIC.
-	  This Driver Can Conform to the Requirements of USB Type-C Functional Test Specification,
-	  And Test Platform is Teledyne LeCroy - Voyager M310e.
-
 endmenu

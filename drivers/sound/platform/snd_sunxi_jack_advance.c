@@ -392,13 +392,14 @@ static void sunxi_jack_dts_params_init(struct sunxi_jack_adv *jack_adv)
 	if (jack_sdbp->jack_sdbp_method != SDBP_NONE) {
 		SND_LOG_DEBUG("jack-sdbp-method            -> %u\n",
 			      jack_sdbp->jack_sdbp_method);
-		if (jack_sdbp->jack_sdbp_method == SDBP_SCAN)
+		if (jack_sdbp->jack_sdbp_method == SDBP_SCAN) {
 			SND_LOG_DEBUG("jack-sdbp-scan-single-time  -> %u\n",
 				      jack_sdbp->jack_sdbp_scan_single_time);
 			SND_LOG_DEBUG("jack-sdbp-scan-max-time  -> %u\n",
 				      jack_sdbp->jack_sdbp_scan_max_time);
 			SND_LOG_DEBUG("jack_sdbp_scan_num  -> %u\n",
 				      jack_sdbp->jack_sdbp_scan_num);
+		}
 	}
 }
 
