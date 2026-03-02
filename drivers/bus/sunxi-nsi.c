@@ -1261,11 +1261,7 @@ static int sunxi_nsi_probe_distribute_masters(struct device *dev,
 	}
 
 	if (!distribute_master_cs) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
 		distribute_master_cs = class_create("nsi_master");
-#else
-		distribute_master_cs = class_create(THIS_MODULE, "nsi_master");
-#endif
 		if (IS_ERR(distribute_master_cs)) {
 			pr_err("device class file already in use\n");
 			return -ENOMEM;
@@ -1344,9 +1340,8 @@ static int sunxi_nsi_probe_distribute_masters(struct device *dev,
 			break;
 		}
 
-		if (of_property_read_bool(child, "power-domains")) {
+		if (of_property_present(child, "power-domains")) {
 			struct of_phandle_args pd_args;
-			struct device_node *pd_np = NULL;
 
 			ret = of_parse_phandle_with_args(child, "power-domains",
 							 "#power-domain-cells",
@@ -1355,15 +1350,8 @@ static int sunxi_nsi_probe_distribute_masters(struct device *dev,
 
 			if (pd_configurated_mask == -1) {
 				pd_configurated_mask = 0;
-				for_each_available_child_of_node(pd_args.np,
-								 pd_np) {
-					u32 pd_reg;
-					if (!of_property_read_u32(pd_np, "reg",
-								  &pd_reg)) {
-						pd_configurated_mask |=
-							1 << pd_reg;
-					}
-				}
+
+				pd_configurated_mask |= 1 << pd_args.args[0];
 			}
 
 			if (pd_configurated_mask & (1 << pd_args.args[0])) {

@@ -14,6 +14,7 @@
 #include <linux/module.h>
 #include <linux/of_address.h>
 #include <linux/of_device.h>
+#include <linux/platform_device.h>
 #include <linux/phy/phy.h>
 #include <linux/phy/phy-dp.h>
 #include <linux/reset.h>
@@ -23,9 +24,6 @@
 #include <linux/extcon.h>
 #include <linux/extcon-provider.h>
 #include <linux/regulator/consumer.h>
-
-static struct phy *sunxi_cadence_phy_xlate(struct device *dev,
-					  struct of_phandle_args *args);
 
 #define phy_set_mask(width, shift)   ((width?((-1U) >> (32-width)):0)  << (shift))
 #define phy_clear_mask(width, shift)   (~(phy_set_mask(width, shift)))
@@ -768,7 +766,7 @@ static void combo_usb_clk_set(struct sunxi_cadence_phy *sunxi_cphy, bool enable)
  * - Raw SerDes interface mode  DisplayPort Tx / embedded DisplayPort Tx                           *
  * - Supports up to 4Lane                                                                          *
  **************************************************************************************************/
-void combo0_dp_phy_reset(struct sunxi_cadence_combophy *combo0, bool deassert)
+static void combo0_dp_phy_reset(struct sunxi_cadence_combophy *combo0, bool deassert)
 {
 	struct sunxi_cadence_phy *sunxi_cphy = combo0->sunxi_cphy;
 	u32 phy0_pma_cmn_ready = 0;
@@ -1895,7 +1893,7 @@ static int combo0_configure_usb_dp(struct sunxi_cadence_combophy *combo0)
 {
 	u32 val = 0;
 
-	pr_debug("==================== orientation: %s USB configured: %s ====================",
+	pr_info("==================== orientation: %s USB configured: %s ====================",
 		 typec_orientation_name[combo0->orientation], COMBO_PHY_TYPE(combo0->mode, PHY_TYPE_USB3) ? "yes" : "no");
 
 	val = readl(COMB0_REG_PHYPINS_LINK_CTRL2(combo0->top_reg));
@@ -2406,7 +2404,7 @@ static int sunxi_cadence_combo0_dp_phy_set_mode(struct phy *phy, enum phy_mode m
 	__u8 hpd_state = COMBO0_HPD_STATE(submode);
 	u32 val = 0;
 
-	pr_debug("mode: %d, submode: %d, orientation: %s, state: %s", mode, submode,
+	pr_info("mode: %d, submode: %d, orientation: %s, state: %s", mode, submode,
 	       typec_orientation_name[orientation], typec_state_name[state]);
 
 	mutex_lock(&combo0->phy_lock);
@@ -2439,6 +2437,7 @@ static int sunxi_cadence_combo0_dp_phy_set_mode(struct phy *phy, enum phy_mode m
 			}
 		}
 
+		// pr_info("combo0->hpd_state: %d, hpd_state: %d", combo0->hpd_state, hpd_state);
 		if (combo0->hpd_state != hpd_state) {
 			if (sunxi_cphy->extcon)
 				extcon_set_state_sync(sunxi_cphy->extcon, EXTCON_DISP_DP, hpd_state);
@@ -3183,7 +3182,7 @@ static int sunxi_cadence_combo0_usb_phy_set_mode(struct phy *phy, enum phy_mode 
 	unsigned long state = COMBO0_TYPEC_MODE(submode);
 
 	combo0->usb_dp_state = false;
-	pr_debug("mode: %d, submode: %d, orientation: %s, state: %s", mode, submode,
+	pr_info("mode: %d, submode: %d, orientation: %s, state: %s", mode, submode,
 	       typec_orientation_name[orientation], typec_state_name[state]);
 
 	mutex_lock(&combo0->phy_lock);
@@ -3921,7 +3920,7 @@ static const struct phy_ops aux_hpd_phy_ops = {
 	.owner		= THIS_MODULE,
 };
 
-const struct phy_ops *sunxi_cadence_node_to_ops(struct device_node *np)
+static const struct phy_ops *sunxi_cadence_node_to_ops(struct device_node *np)
 {
 	const struct phy_ops *ops = NULL;
 
@@ -3940,7 +3939,7 @@ const struct phy_ops *sunxi_cadence_node_to_ops(struct device_node *np)
 	return ops;
 }
 
-int sunxi_cadence_phy_create(struct device *dev, struct device_node *np,
+static int sunxi_cadence_phy_create(struct device *dev, struct device_node *np,
 			     struct sunxi_cadence_combophy *combophy, enum phy_type_e type)
 {
 	struct sunxi_cadence_phy *sunxi_cphy = dev_get_drvdata(dev);
@@ -3998,7 +3997,7 @@ int sunxi_cadence_phy_create(struct device *dev, struct device_node *np,
 	combophy->phy_reg = of_iomap(np, 1);
 	if (!combophy->phy_reg) {
 		combophy->phy_reg = NULL;
-		pr_debug("Maybe there is no phy reg for %s\n", combophy->name);
+		pr_err("Maybe there is no phy reg for %s\n", combophy->name);
 	}
 
 	ret = of_property_read_u32_array(np, "lane_invert", prop_val, MAX_LANE_CNT);
@@ -4057,14 +4056,14 @@ int sunxi_cadence_phy_create(struct device *dev, struct device_node *np,
 	combophy->usb_dp_state = false;
 	combophy->ssc_en = 0;
 
-	pr_debug("phy[%s]: lane_invert[%d %d %d %d] lane_remap[%d %d %d %d] typec_remap[%d %d %d %d]\n",
+	pr_info("phy[%s]: lane_invert[%d %d %d %d] lane_remap[%d %d %d %d] typec_remap[%d %d %d %d]\n",
 		 combophy->name, combophy->lane_invert[0], combophy->lane_invert[1],
 		 combophy->lane_invert[2], combophy->lane_invert[3], combophy->lane_remap[0],
 		 combophy->lane_remap[1], combophy->lane_remap[2], combophy->lane_remap[3],
 		 combophy->typec_remap[0], combophy->typec_remap[1], combophy->typec_remap[2],
 		 combophy->typec_remap[3]);
 
-	phy_provider = __devm_of_phy_provider_register(dev, np, THIS_MODULE, sunxi_cadence_phy_xlate);
+	phy_provider = devm_of_phy_provider_register_full(dev, np, of_phy_simple_xlate);
 	if (IS_ERR(phy_provider))
 		return PTR_ERR_OR_ZERO(phy_provider);
 
@@ -4093,21 +4092,6 @@ int sunxi_cadence_phy_create(struct device *dev, struct device_node *np,
  * |_ _ _ _ _ _  |_ _ _ _ |_ _ _ |_ _ _ _ _ _ _|_ _ _ _ _|
  *
  *******************************************************************/
-static struct phy *sunxi_cadence_phy_xlate(struct device *dev,
-					  struct of_phandle_args *args)
-{
-	struct phy *phy = NULL;
-
-	phy = of_phy_simple_xlate(dev, args);
-	if (IS_ERR(phy)) {
-		pr_err("%s fail\n", __func__);
-		return phy;
-	}
-
-	/* TODO: if need */
-
-	return phy;
-}
 
 static int sunxi_cadence_phy_serdes_init(struct sunxi_cadence_phy *sunxi_cphy)
 {
@@ -4202,7 +4186,7 @@ static int sunxi_cadence_phy_parse_dt(struct platform_device *pdev)
 	if (IS_ERR(sunxi_cphy->serdes1v8_supply))
 		dev_err(dev, "get serdes 1v8-supply fail\n");
 
-/*
+	/*
 	sunxi_cphy->avdd_h_regulator = devm_regulator_get(dev, "avdd-h");
 	if (IS_ERR(sunxi_cphy->avdd_h_regulator))
 		pr_warn("AVDD-H supply is not found, maybe it's not need!");
@@ -4218,7 +4202,7 @@ static int sunxi_cadence_phy_parse_dt(struct platform_device *pdev)
 	sunxi_cphy->avdd_aux_regulator = devm_regulator_get(dev, "avdd-aux");
 	if (IS_ERR(sunxi_cphy->avdd_aux_regulator))
 		pr_warn("AVDD-AUX supply is not found, maybe it's not need!");
-*/
+	*/
 
 	for_each_available_child_of_node(dev->of_node, child) {
 		if (of_node_name_eq(child, "combo-phy0")) {
@@ -4302,14 +4286,12 @@ static int sunxi_cadence_phy_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int sunxi_cadence_phy_remove(struct platform_device *pdev)
+static void sunxi_cadence_phy_remove(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct sunxi_cadence_phy *sunxi_cphy = dev_get_drvdata(dev);
 
 	sunxi_cadence_phy_serdes_exit(sunxi_cphy);
-
-	return 0;
 }
 
 static int __maybe_unused sunxi_cadence_phy_suspend(struct device *dev)

@@ -5,17 +5,14 @@
 
 #include <linux/notifier.h>
 
-#include "core.h"
-#include "io.h"
+#include <../drivers/usb/dwc3/core.h>
+#include <../drivers/usb/dwc3/io.h>
 #include "sunxi-gpio.h"
 #include "sunxi-inno.h"
 
 #define DRIVER_NAME "sunxi-plat-dwc3"
 #define DRIVER_VERSION "v1.0.23 2024-11-25 14:00"
 #define DRIVER_INFOMATION "DesignWare USB3 Allwinner Glue Layer Driver(" DRIVER_VERSION ")"
-
-/* Link Registers */
-#define DWC3_LLUCTL		0xd024
 
 /* Bit fields */
 

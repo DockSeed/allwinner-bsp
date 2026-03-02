@@ -25,13 +25,8 @@
 
 struct sunxi_phy_switcher {
 	struct mutex lock; /* protects the cached conf register */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
-	struct typec_switch *sw;
-	struct typec_mux *mux;
-#else
 	struct typec_switch_dev *sw;
 	struct typec_mux_dev *mux;
-#endif
 	struct device *dev;
 	struct phy *dp_phy;
 	struct phy *usb_phy;
@@ -171,13 +166,8 @@ static void phy_switcher_notify_hotplug_out(struct sunxi_phy_switcher *switcher)
 }
 
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
-static int sunxi_phy_sw_set(struct typec_switch *sw,
-			      enum typec_orientation orientation)
-#else
 static int sunxi_phy_sw_set(struct typec_switch_dev *sw,
 			      enum typec_orientation orientation)
-#endif
 {
 	struct sunxi_phy_switcher *phy_switcher = typec_switch_get_drvdata(sw);
 
@@ -235,11 +225,7 @@ static int sunxi_phy_sw_set(struct typec_switch_dev *sw,
 }
 
 static int
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
-sunxi_phy_mux_set(struct typec_mux *mux, struct typec_mux_state *state)
-#else
 sunxi_phy_mux_set(struct typec_mux_dev *mux, struct typec_mux_state *state)
-#endif
 {
 	struct sunxi_phy_switcher *phy_switcher = typec_mux_get_drvdata(mux);
 	bool current_limit_restore = false;
@@ -273,14 +259,14 @@ sunxi_phy_mux_set(struct typec_mux_dev *mux, struct typec_mux_state *state)
 		 * DP_CMD_CONFIGURE block because of  vdm_state change from
 		 * SNK_READY to GET_SINK_CAP
 		 */
-		if ((data->conf & DP_CONF_SIGNALING_DP) &&
+		if (data->conf &&
 		    (state->mode == TYPEC_STATE_SAFE) &&
 		    (phy_switcher->dp_configure_delay)) {
 			mdelay(phy_switcher->dp_configure_delay);
 		}
 
 		/* altmode displayport plugin */
-		if ((data->conf & DP_CONF_SIGNALING_DP) && (data->status & DP_STATUS_HPD_STATE))
+		if (data->conf && (data->status & DP_STATUS_HPD_STATE))
 			phy_switcher->hpd_status = true;
 		else
 			phy_switcher->hpd_status = false;
@@ -367,19 +353,17 @@ static int sunxi_phy_switcher_probe(struct platform_device *pdev)
 		pr_warn("get hotplug pin for phy mux failed, hotplug may be useless!\n");
 	} else {
 		/* init hotplug state to plugout */
-		devm_gpio_request(dev, phy_switcher->hpd_gpio, gpio_name);
-		gpio_direction_output(phy_switcher->hpd_gpio, MUX_HOUTPLUG_OUT);
+		devm_gpio_request_one(dev, phy_switcher->hpd_gpio, GPIOF_OUT_INIT_LOW, gpio_name);
 	}
 
-	/* default manaual external pull up/down, auxp pull down and auxn pull up*/
+	/* default manual external pull up/down, auxp pull down and auxn pull up*/
 	sprintf(gpio_name, "aux_p");
 	phy_switcher->auxp_gpio = of_get_named_gpio(node, gpio_name, 0);
 	if (!gpio_is_valid(phy_switcher->auxp_gpio)) {
 		pr_warn("get aux_p pull external up/down pin for phy mux failed, may be useless!\n");
 	} else {
 		/* init hotplug state to plugout */
-		devm_gpio_request(dev, phy_switcher->auxp_gpio, gpio_name);
-		gpio_direction_output(phy_switcher->auxp_gpio, AUX_PULL_DOWN);
+		devm_gpio_request_one(dev, phy_switcher->auxp_gpio, GPIOF_OUT_INIT_LOW, gpio_name);
 	}
 
 	sprintf(gpio_name, "aux_n");
@@ -388,8 +372,7 @@ static int sunxi_phy_switcher_probe(struct platform_device *pdev)
 		pr_warn("get aux_n pull external up/down pin for phy mux failed, may be useless!\n");
 	} else {
 		/* init hotplug state to plugout */
-		devm_gpio_request(dev, phy_switcher->auxn_gpio, gpio_name);
-		gpio_direction_output(phy_switcher->auxn_gpio, AUX_PULL_UP);
+		devm_gpio_request_one(dev, phy_switcher->auxn_gpio, GPIOF_OUT_INIT_HIGH, gpio_name);
 	}
 
 	phy_switcher->dp_phy = devm_phy_get(dev, "dp-phy");
@@ -449,19 +432,12 @@ static int sunxi_phy_switcher_probe(struct platform_device *pdev)
 	return 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
-static int sunxi_phy_switcher_remove(struct platform_device *pdev)
-#else
 static void sunxi_phy_switcher_remove(struct platform_device *pdev)
-#endif
 {
 	struct sunxi_phy_switcher *phy_switcher = dev_get_drvdata(&pdev->dev);
 
 	typec_mux_unregister(phy_switcher->mux);
 	typec_switch_unregister(phy_switcher->sw);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
-	return 0;
-#endif
 }
 
 static const struct of_device_id sunxi_phy_switcher_match[] = {
@@ -470,11 +446,7 @@ static const struct of_device_id sunxi_phy_switcher_match[] = {
 
 static struct platform_driver sunxi_phy_switcher_driver = {
 	.probe = sunxi_phy_switcher_probe,
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 	.remove = sunxi_phy_switcher_remove,
-#else
-	.remove_new = sunxi_phy_switcher_remove,
-#endif
 	.driver = {
 		.name = "switcher",
 		.owner = THIS_MODULE,
