@@ -55,7 +55,7 @@
 #ifndef _VIP_DRV_INTERFACE_H
 #define _VIP_DRV_INTERFACE_H
 
-#include <vip_drv_share.h>
+#include <inc/vip_drv_share.h>
 
 
 /************ EXPOSED vip-drv APIs ***************/

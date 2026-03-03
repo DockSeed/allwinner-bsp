@@ -56,7 +56,7 @@
 #define _VIP_DRV_MEM_ALLOCATOR_ARRAY_H
 
 #include <vip_drv_type.h>
-#include <vip_drv_mem_allocator.h>
+#include <memory/vip_drv_mem_allocator.h>
 
 
 #if vpmdENABLE_VIDEO_MEMORY_HEAP

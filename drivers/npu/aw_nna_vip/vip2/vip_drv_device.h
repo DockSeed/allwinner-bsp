@@ -57,7 +57,7 @@
 
 #include <vip_drv_type.h>
 #include <vip_drv_hardware.h>
-#include <vip_drv_task_common.h>
+#include <task/vip_drv_task_common.h>
 
 /*
 @brief define loop fun for getting each vip core in device

@@ -51,11 +51,11 @@
 *    version of this file.
 *
 *****************************************************************************/
-#include <vip_drv_mmu.h>
+#include <memory/vip_drv_mmu.h>
 #if vpmdENABLE_MMU
 #include <vip_drv_context.h>
-#include <vip_drv_mem_heap.h>
-#include <vip_drv_device_driver.h>
+#include <memory/vip_drv_mem_heap.h>
+#include <os/linux/vip_drv_device_driver.h>
 
 #undef VIPDRV_LOG_ZONE
 #define VIPDRV_LOG_ZONE  VIPDRV_LOG_ZONE_MMU

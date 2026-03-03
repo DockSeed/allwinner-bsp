@@ -55,7 +55,7 @@
 #ifndef _VIP_DRV_UTIL_H_
 #define _VIP_DRV_UTIL_H_
 
-#include <vip_lite_config.h>
+#include <inc/vip_lite_config.h>
 #include <vip_drv_os_port.h>
 
 typedef struct _vipdrv_recursive_mutex

@@ -52,10 +52,10 @@
 *
 *****************************************************************************/
 
-#include <vip_drv_mem_heap.h>
+#include <memory/vip_drv_mem_heap.h>
 #if vpmdENABLE_VIDEO_MEMORY_HEAP
 #include <vip_drv_context.h>
-#include <vip_drv_device_driver.h>
+#include <os/linux/vip_drv_device_driver.h>
 
 #undef VIPDRV_LOG_ZONE
 #define VIPDRV_LOG_ZONE  VIPDRV_LOG_ZONE_VIDEO_MEMORY

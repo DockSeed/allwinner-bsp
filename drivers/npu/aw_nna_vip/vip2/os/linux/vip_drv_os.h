@@ -54,7 +54,7 @@
 
 #ifndef _VIP_DRV_OS_H
 #define _VIP_DRV_OS_H
-#include <vip_drv_share.h>
+#include <inc/vip_drv_share.h>
 
 #define VIPDRV_IOCTL   30000
 

@@ -56,7 +56,7 @@
 #define _VIP_DRV_VIDEO_MEMORY_H_
 
 #include <vip_drv_type.h>
-#include <vip_drv_share.h>
+#include <inc/vip_drv_share.h>
 
 typedef struct _vipdrv_mem_control_block
 {

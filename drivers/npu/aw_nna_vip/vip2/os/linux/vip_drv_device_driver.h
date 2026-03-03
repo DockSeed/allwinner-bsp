@@ -90,26 +90,17 @@
 #ifdef CONFIG_COMPAT
 #include <asm/compat.h>
 #endif
-#include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/of_device.h>
+#include <linux/of_platform.h>
 #include <linux/dma-mapping.h>
 #include <linux/math64.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,16,0))
 #include <linux/stdarg.h>
-#else
-#include <stdarg.h>
-#endif
 #include <linux/time.h>
 #include <linux/mm.h>
 #include <linux/debugfs.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0))
 #include <linux/cma.h>
-#endif
-#if defined (USE_LINUX_PCIE_DEVICE)
-#include <linux/pci.h>
-#endif
-#include <vip_lite_config.h>
+#include <inc/vip_lite_config.h>
 #if vpmdENABLE_DEBUGFS
 #include <vip_drv_os_debug.h>
 #endif
@@ -117,17 +108,9 @@
 #include <vip_drv_os_port.h>
 
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0)
 #define current_mm_mmap_sem current->mm->mmap_lock
-#else
-#define current_mm_mmap_sem current->mm->mmap_sem
-#endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION (3,7,0)
 #define vipdVM_FLAGS (VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP)
-#else
-#define vipdVM_FLAGS (VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_RESERVED)
-#endif
 
 typedef uintptr_t  vipdrv_uintptr_t;
 
@@ -187,19 +170,8 @@ typedef struct _vipdrv_driver_t {
     struct class          *class;
     vip_int32_t           created;
     volatile vip_uint32_t irq_value[vipdMAX_CORE];
-#if defined (USE_LINUX_PCIE_DEVICE)
-    vip_uint32_t          pci_bars[vipdMAX_CORE];
-    vip_uint32_t          reg_offset[vipdMAX_CORE];
-    vip_uint64_t          pci_bar_size[vipdMAX_CORE];
-    vip_physical_t         pci_bar_base[vipdMAX_CORE];
-    volatile void         *pci_vip_reg[vipdMAX_CORE];
-    vip_uint64_t          dma_mask;
-    struct pci_dev        *pdev;
-    struct pci_driver     *pdrv;
-#elif defined (USE_LINUX_PLATFORM_DEVICE)
     struct platform_device *pdev;
     struct platform_driver *pdrv;
-#endif
 
     vip_uint32_t     core_fscale_percent;
 

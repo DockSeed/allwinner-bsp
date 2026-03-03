@@ -54,12 +54,6 @@ OBJS := vip_drv_interface.o \
         os/linux/allocator/vip_drv_mem_allocator_wrap_dma_buf.o
 
 #platform
-ifeq ($(CONFIG_NPU_USER_IOMMU), )
-export NPU_USER_IOMMU=0
-else
-export NPU_USER_IOMMU=1
-endif
-
 
 ifeq ($(SOC_CONFIG), )
 OBJS += os/linux/platform/$(PLATFORM_NAME)/vip_drv_device_platform.o
@@ -71,8 +65,8 @@ endif
 #Include platform config if exists.
 -include $(srctree)/$(src)/os/linux/platform/$(PLATFORM_NAME)/platform.mk
 
-ifeq ($(NPU_USER_IOMMU), 1)
-	OBJS+= $(srctree)/$(src)/os/linux/platform/$(PLATFORM_NAME)/gc_vip_kernel_ion.o
+ifneq ($(CONFIG_NPU_USER_IOMMU), )
+	OBJS += $(srctree)/$(src)/os/linux/platform/$(PLATFORM_NAME)/gc_vip_kernel_ion.o
 endif
 
 #NOTE:
@@ -102,10 +96,10 @@ install: all
 EXTRA_CFLAGS += -DLINUX -DDRIVER
 
 # NPU USE IOMMU
-ifeq ($(NPU_USER_IOMMU), 1)
-EXTRA_CFLAGS += -DNPU_USER_IOMMU=1
-else ifeq ($(NPU_USER_IOMMU), 0)
+ifneq ($(CONFIG_NPU_USER_IOMMU), )
 EXTRA_CFLAGS += -DNPU_USER_IOMMU=0
+else
+EXTRA_CFLAGS += -DNPU_USER_IOMMU=1
 endif
 
 ifeq ($(FLAREON),1)
@@ -118,14 +112,7 @@ else
 EXTRA_CFLAGS += -DDBG=0
 endif
 
-ifeq ($(USE_LINUX_PCIE_DEVICE), 1)
-EXTRA_CFLAGS += -DUSE_LINUX_PCIE_DEVICE
-ifneq ($(REGISTER_PCIE_DRIVER), )
-EXTRA_CFLAGS += -DvpmdREGISTER_PCIE_DRIVER=$(REGISTER_PCIE_DRIVER)
-endif
-else ifeq ($(USE_LINUX_PLATFORM_DEVICE), 1)
 EXTRA_CFLAGS += -DUSE_LINUX_PLATFORM_DEVICE
-endif
 
 ifneq ($(FPGA_BUILD), )
 EXTRA_CFLAGS += -DvpmdFPGA_BUILD=$(FPGA_BUILD)
@@ -144,13 +131,13 @@ EXTRA_CFLAGS += -DvpmdENABLE_USE_AGENT_TRIGGER=$(USE_AGENT)
 endif
 
 
-ifeq ($(NPU_USER_IOMMU), 1)
-	ifeq ($(DISABLE_MMU), 1)
-	EXTRA_CFLAGS += -DvpmdENABLE_MMU=0
-	endif
-else
+ifneq ($(CONFIG_NPU_USER_IOMMU), )
 	ifneq ($(ENABLE_MMU), )
 	EXTRA_CFLAGS += -DvpmdENABLE_MMU=$(ENABLE_MMU)
+	endif
+else
+	ifeq ($(DISABLE_MMU), 1)
+	EXTRA_CFLAGS += -DvpmdENABLE_MMU=0
 	endif
 endif
 

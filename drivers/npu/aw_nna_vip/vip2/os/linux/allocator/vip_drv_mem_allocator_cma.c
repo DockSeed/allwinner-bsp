@@ -52,11 +52,11 @@
 *
 *****************************************************************************/
 
-#include <vip_drv_mem_allocator.h>
+#include <memory/vip_drv_mem_allocator.h>
 #if defined (USE_LINUX_CMA)
-#include <vip_drv_video_memory.h>
-#include <vip_drv_mem_allocator_common.h>
-#include "vip_drv_device_driver.h"
+#include <memory/vip_drv_video_memory.h>
+#include <os/linux/allocator/vip_drv_mem_allocator_common.h>
+#include <os/linux/vip_drv_device_driver.h>
 #include <vip_drv_context.h>
 #include <linux/vmstat.h>
 

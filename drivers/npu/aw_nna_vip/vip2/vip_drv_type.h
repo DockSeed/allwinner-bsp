@@ -55,7 +55,7 @@
 #ifndef _VIP_DRV_TYPE_H
 #define _VIP_DRV_TYPE_H
 
-#include <vip_lite_config.h>
+#include <inc/vip_lite_config.h>
 
 
 /* vip-drv log zone defines */

@@ -58,7 +58,7 @@
 #include <vip_drv_type.h>
 #if vpmdENABLE_MMU
 #include <vip_drv_os_port.h>
-#include <vip_drv_video_memory.h>
+#include <memory/vip_drv_video_memory.h>
 #define ENABLE_MMU_MAPPING_LOG       0
 
 typedef enum _vipdrv_mmu_page_type

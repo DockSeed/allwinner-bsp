@@ -55,7 +55,7 @@
 #ifndef _VIP_LITE_CONFIG_H
 #define _VIP_LITE_CONFIG_H
 
-#include <vip_lite_common.h>
+#include <inc/vip_lite_common.h>
 
 typedef enum _vip_log_level
 {
@@ -359,7 +359,7 @@ choose driver runs on FPGA or silicon board.
        when 2 == vpmdENABLE_MMU: per CPU process per MMU page.
 */
 #ifndef vpmdENABLE_MMU
-#if NPU_USER_IOMMU
+#if IS_ENABLED(CONFIG_NPU_USER_IOMMU)
 #define vpmdENABLE_MMU 						0
 #else
 #define vpmdENABLE_MMU                      1

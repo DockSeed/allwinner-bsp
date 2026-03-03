@@ -55,8 +55,8 @@
 #ifndef __VIP_DRV_OS_PORT_H__
 #define __VIP_DRV_OS_PORT_H__
 
-#include <vip_lite_config.h>
-#include <vip_drv_share.h>
+#include <inc/vip_lite_config.h>
+#include <inc/vip_drv_share.h>
 #include <vip_drv_type.h>
 
 

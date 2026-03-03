@@ -59,7 +59,8 @@
 
 #ifndef _VIP_DRV_SHARE_H
 #define _VIP_DRV_SHARE_H
-#include <vip_lite_config.h>
+
+#include <inc/vip_lite_config.h>
 
 #define MAX_FREQ_POINTS 16
 

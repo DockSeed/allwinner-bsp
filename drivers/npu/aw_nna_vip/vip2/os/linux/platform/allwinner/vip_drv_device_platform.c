@@ -31,19 +31,15 @@
  *****************************************************************************
  */
 
-#include "vip_drv_device_driver.h"
+#include <os/linux/vip_drv_device_driver.h>
 #include "vip_drv_device_platform_config.h"
 #include "vip_drv_device_platform.h"
 #include "vip_drv_context.h"
 #include "vip_drv_device.h"
-#include "vip_drv_interface.h"
+#include <inc/vip_drv_interface.h>
 #include <sunxi-sid.h>
 #include <sunxi-smc.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 16, 0))
 #include <linux/stdarg.h>
-#else
-#include <stdarg.h>
-#endif
 #include <linux/time.h>
 #include <linux/mm.h>
 #include <linux/clk.h>
@@ -56,7 +52,7 @@
 #include <linux/devfreq_cooling.h>
 #include <linux/pm_opp.h>
 
-#if NPU_USER_IOMMU
+#if IS_ENABLED(CONFIG_NPU_USER_IOMMU)
 #include <linux/dma-mapping.h>
 #include <asm/dma-iommu.h>
 #endif
@@ -586,7 +582,7 @@ static int get_npu_clk_vol(unsigned int vf_index, unsigned int npu_vf, int *npu_
 #endif
 
 #if IS_ENABLED(CONFIG_ARCH_SUN55IW6)
-void check_smc_set_freq(void)
+static void check_smc_set_freq(void)
 {
 	u32 data = 0;
 	u32 key = 0;
@@ -646,7 +642,7 @@ out:
 			data, key, aw_driver.max_freq, aw_driver.default_freq);
 }
 #elif IS_ENABLED(CONFIG_ARCH_SUN60IW2)
-void check_smc_set_freq(void)
+static void check_smc_set_freq(void)
 {
 
 	u32 key = 0;
@@ -661,7 +657,7 @@ void check_smc_set_freq(void)
 			tmpbuf, key, aw_driver.max_freq, aw_driver.default_freq);
 }
 #else
-void check_smc_set_freq(void)
+static void check_smc_set_freq(void)
 {
 	u32 data = 0;
 	u32 key = 0;
@@ -676,7 +672,7 @@ void check_smc_set_freq(void)
 }
 #endif
 
-void check_freq_available(void)
+static void check_freq_available(void)
 {
 	int i = 0;
 	u64 rate = 0;
@@ -1014,11 +1010,6 @@ static struct devfreq_dev_profile vipdrv_devfreq_profile = {
 	.get_cur_freq   = vipdrv_get_cur_freq,
 };
 
-static vip_int32_t manual_add_opp_table(struct device *dev)
-{
-	return 0;
-}
-
 static vip_int32_t add_devfreq_node(struct device *dev)
 {
 	int ret = 0;
@@ -1188,7 +1179,7 @@ vip_int32_t vipdrv_drv_adjust_param(
 	}
 
 #if IS_ENABLED(CONFIG_AW_PM_DOMAINS)
-	aw_driver.enable_pm = of_property_read_bool(pdev->dev.of_node, "power-domains");
+	aw_driver.enable_pm = of_property_present(pdev->dev.of_node, "power-domains");
 #endif
 	PRINTK("npu power domains status: %d\n", aw_driver.enable_pm);
 

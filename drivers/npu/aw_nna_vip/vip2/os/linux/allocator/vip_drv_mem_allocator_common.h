@@ -56,18 +56,14 @@
 #define _VIP_DRV_MEM_ALLOCATOR_COMMON_H
 
 #include <linux/dma-buf.h>
-#include <vip_lite_config.h>
+#include <inc/vip_lite_config.h>
 #include <vip_drv_os_port.h>
-#include <vip_drv_video_memory.h>
+#include <memory/vip_drv_video_memory.h>
 
 
 #define USE_MEM_WRITE_COMOBINE      1
 
-#if defined(USE_LINUX_PCIE_DEVICE) || defined(USE_LINUX_PLATFORM_DEVICE)
 #define FLUSH_CACHE_HOOK            1
-#else
-#define FLUSH_CACHE_HOOK            0
-#endif
 
 typedef struct _vipdrv_dma_buf_info{
     struct dma_buf *dma_buf;

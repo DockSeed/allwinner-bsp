@@ -51,22 +51,22 @@
 *    version of this file.
 *
 *****************************************************************************/
-#include <vip_lite_config.h>
+#include <inc/vip_lite_config.h>
 #if vpmdENABLE_DEBUGFS
 #include <linux/string.h>
-#include "vip_drv_os_debug.h"
-#include "vip_drv_device_driver.h"
-#include <vip_drv_interface.h>
+#include <vip_drv_os_debug.h>
+#include <os/linux/vip_drv_device_driver.h>
+#include <inc/vip_drv_interface.h>
 #include <vip_drv_hardware.h>
 #include <vip_drv_os_port.h>
-#include <vip_drv_video_memory.h>
-#include <vip_drv_mem_allocator.h>
+#include <memory/vip_drv_video_memory.h>
+#include <memory/vip_drv_mem_allocator.h>
 #include <vip_drv_debug.h>
-#include <vip_drv_mmu.h>
+#include <memory/vip_drv_mmu.h>
 #include <vip_drv_context.h>
-#include <vip_drv_task_common.h>
-#include <vip_drv_task_descriptor.h>
-#include <vip_lite_version.h>
+#include <task/vip_drv_task_common.h>
+#include <task/vip_drv_task_descriptor.h>
+#include <inc/vip_lite_version.h>
 #include <asm/div64.h>
 
 #ifndef vpmdUSE_DEBUG_FS

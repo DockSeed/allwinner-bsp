@@ -76,7 +76,7 @@ VIPLite driver version number defines.
 #define VERSION_SUB_MINOR	3
 
 /* a string for patch version number defines */
-#if NPU_USER_IOMMU
+#if IS_ENABLED(CONFIG_NPU_USER_IOMMU)
 /* for non-used npu mmu,use iommu instead */
 #define VERSION_PATCH 		"0-AW-2024-05-28"
 #else

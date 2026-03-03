@@ -55,7 +55,7 @@
 #define _VIP_DRV_TASK_COMMON_H_
 #include <vip_drv_type.h>
 #include <vip_drv_util.h>
-#include <vip_drv_share.h>
+#include <inc/vip_drv_share.h>
 
 #define VIPDRV_SHOW_TASK_INFO_IMPL(tsk, string)                        \
 {                                                                      \

@@ -52,10 +52,10 @@
 *
 *****************************************************************************/
 
-#include <vip_drv_mem_allocator.h>
-#include <vip_drv_video_memory.h>
-#include <vip_drv_mem_allocator_common.h>
-#include "vip_drv_device_driver.h"
+#include <memory/vip_drv_mem_allocator.h>
+#include <memory/vip_drv_video_memory.h>
+#include <os/linux/allocator/vip_drv_mem_allocator_common.h>
+#include <os/linux/vip_drv_device_driver.h>
 
 #undef VIPDRV_LOG_ZONE
 #define VIPDRV_LOG_ZONE  VIPDRV_LOG_ZONE_VIDEO_MEMORY
@@ -256,7 +256,7 @@ static vip_status_e vipdrv_mem_alloc_continue(
             #endif
             vipGoOnError(VIP_ERROR_FAILURE);
         }
-        cpu_physical = page_to_phys(nth_page(contiguous_pages, 0));
+        cpu_physical = page_to_phys(contiguous_pages);
         if (0 == cpu_physical) {
             #if DEBUG_ALLOCATOR
             PRINTK("error continue allocator cpu_physical address is 0\n");

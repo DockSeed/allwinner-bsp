@@ -53,7 +53,7 @@
 *****************************************************************************/
 #include <vip_drv_pm.h>
 #if vpmdENABLE_POWER_MANAGEMENT
-#include <vip_drv_device_driver.h>
+#include <os/linux/vip_drv_device_driver.h>
 #include <vip_drv_context.h>
 #if vpmdENABLE_TASK_PROFILE
 #include <vip_drv_debug.h>

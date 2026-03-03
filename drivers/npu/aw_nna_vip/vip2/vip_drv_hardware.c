@@ -53,15 +53,15 @@
 *****************************************************************************/
 
 #include <vip_drv_hardware.h>
-#include <vip_drv_device_driver.h>
+#include <os/linux/vip_drv_device_driver.h>
 #include <vip_drv_context.h>
 #include <vip_drv_debug.h>
-#include <vip_drv_mmu.h>
+#include <memory/vip_drv_mmu.h>
 
 /*
 @brief list all support bypass reorder.
 */
-vip_bool_e vipdrv_hw_bypass_reorder(void)
+static vip_bool_e vipdrv_hw_bypass_reorder(void)
 {
     vip_bool_e support = vip_false_e;
     vipdrv_context_t *context = (vipdrv_context_t*)vipdrv_get_context(VIPDRV_CONTEXT_PROP_ALL);

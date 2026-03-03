@@ -69,14 +69,10 @@
 #include <linux/vmalloc.h>
 #include <linux/kthread.h>
 #include <linux/idr.h>
-#include <vip_drv_mem_allocator.h>
-#include "vip_drv_mem_allocator_common.h"
-#include "vip_drv_device_driver.h"
-#include <vip_drv_video_memory.h>
-#if defined (USE_LINUX_PCIE_DEVICE)
-#include <linux/pci.h>
-#endif
-
+#include <memory/vip_drv_mem_allocator.h>
+#include <os/linux/allocator/vip_drv_mem_allocator_common.h>
+#include <os/linux/vip_drv_device_driver.h>
+#include <memory/vip_drv_video_memory.h>
 #undef VIPDRV_LOG_ZONE
 #define VIPDRV_LOG_ZONE  VIPDRV_LOG_ZONE_VIDEO_MEMORY
 
@@ -90,7 +86,7 @@
 #endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,5,0)
-MODULE_IMPORT_NS(DMA_BUF);
+MODULE_IMPORT_NS("DMA_BUF");
 #endif
 
 extern vipdrv_driver_t *kdriver;
@@ -954,7 +950,7 @@ vip_status_e vipdrv_fill_pages(
             if (page_index == page_count) {
                 break;
             }
-            pages[page_index++] = nth_page(page, j);
+            pages[page_index++] = page + j;
         }
     }
 

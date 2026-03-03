@@ -52,17 +52,13 @@
 *
 *****************************************************************************/
 
-#include "vip_drv_os_port.h"
-#include "vip_drv_device_driver.h"
-#include "vip_drv_mem_heap.h"
-#include "vip_drv_hardware.h"
-#include "vip_drv_debug.h"
-#include "vip_drv_context.h"
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,16,0)
+#include <vip_drv_os_port.h>
+#include <os/linux/vip_drv_device_driver.h>
+#include <memory/vip_drv_mem_heap.h>
+#include <vip_drv_hardware.h>
+#include <vip_drv_debug.h>
+#include <vip_drv_context.h>
 #include <linux/stdarg.h>
-#else
-#include <stdarg.h>
-#endif
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/time.h>
@@ -72,12 +68,8 @@
 #include <asm/atomic.h>
 #include <linux/vmalloc.h>
 #include <linux/types.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 #include <uapi/linux/sched/types.h>
 #include <linux/sched/task.h>
-#else
-#include <linux/sched.h>
-#endif
 
 typedef struct _vipdrv_signal_data
 {
@@ -737,7 +729,7 @@ vip_status_e vipdrv_os_destroy_mutex(
     return status;
 }
 
-vip_status_e vipdrv_os_create_spinlock(
+static vip_status_e vipdrv_os_create_spinlock(
     vipdrv_spinlock *spinlock
     )
 {
@@ -756,7 +748,7 @@ vip_status_e vipdrv_os_create_spinlock(
     return status;
 }
 
-vip_status_e vipdrv_os_lock_spinlock(
+static vip_status_e vipdrv_os_lock_spinlock(
     vipdrv_spinlock spinlock
     )
 {
@@ -771,7 +763,7 @@ vip_status_e vipdrv_os_lock_spinlock(
 
 }
 
-vip_status_e vipdrv_os_unlock_spinlock(
+static vip_status_e vipdrv_os_unlock_spinlock(
     vipdrv_spinlock spinlock
     )
 {
@@ -785,7 +777,7 @@ vip_status_e vipdrv_os_unlock_spinlock(
     return status;
 }
 
-vip_status_e vipdrv_os_destroy_spinlock(
+static vip_status_e vipdrv_os_destroy_spinlock(
     vipdrv_spinlock spinlock
     )
 {
@@ -1162,7 +1154,7 @@ typedef struct _vipdrv_timer
     vip_ptr                  data;
 } vipdrv_timer_t;
 
-void _timer_function_handle(
+static void _timer_function_handle(
     struct work_struct *work
     )
 {

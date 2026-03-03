@@ -56,8 +56,8 @@
 #define _VIP_DRV_DEBUG_H
 
 #include <vip_drv_type.h>
-#include <vip_drv_share.h>
-#include <vip_drv_task_debug.h>
+#include <inc/vip_drv_share.h>
+#include <task/vip_drv_task_debug.h>
 
 
 #if vpmdENABLE_HANG_DUMP

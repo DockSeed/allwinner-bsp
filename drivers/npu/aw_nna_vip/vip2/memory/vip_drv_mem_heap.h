@@ -55,12 +55,12 @@
 #ifndef __VIP_DRV_HEAP_H__
 #define __VIP_DRV_HEAP_H__
 
-#include <vip_lite_config.h>
+#include <inc/vip_lite_config.h>
 
 #if vpmdENABLE_VIDEO_MEMORY_HEAP
 #include <vip_drv_type.h>
 #include <vip_drv_os_port.h>
-#include <vip_drv_mem_allocator.h>
+#include <memory/vip_drv_mem_allocator.h>
 /* allocate node struce for dynamic malloc */
 #ifndef vpmdNODE_MEMORY_IN_HEAP
 #define vpmdNODE_MEMORY_IN_HEAP              1

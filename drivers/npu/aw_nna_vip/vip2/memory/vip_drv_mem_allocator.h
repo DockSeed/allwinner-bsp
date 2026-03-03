@@ -56,7 +56,7 @@
 #define _VIP_KERNEL_ALLOCATOR_H
 
 #include <vip_drv_type.h>
-#include <vip_drv_video_memory.h>
+#include <memory/vip_drv_video_memory.h>
 #define DEBUG_ALLOCATOR         0
 
 /* Fill a vipdrv_allocator_desc_t structure. */

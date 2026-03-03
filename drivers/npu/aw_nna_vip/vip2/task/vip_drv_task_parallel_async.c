@@ -52,12 +52,12 @@
 *
 *****************************************************************************/
 
-#include <vip_drv_task_common.h>
+#include <task/vip_drv_task_common.h>
 #if vpmdTASK_PARALLEL_ASYNC
 #include <vip_drv_context.h>
-#include <vip_drv_device_driver.h>
+#include <os/linux/vip_drv_device_driver.h>
 #include <vip_drv_debug.h>
-#include <vip_drv_task_descriptor.h>
+#include <task/vip_drv_task_descriptor.h>
 
 #undef VIPDRV_LOG_ZONE
 #define VIPDRV_LOG_ZONE  VIPDRV_LOG_ZONE_TASK

@@ -52,10 +52,10 @@
 *
 *****************************************************************************/
 
-#include <vip_drv_task_schedule.h>
+#include <task/vip_drv_task_schedule.h>
 #if vpmdTASK_SCHEDULE
 #include <vip_drv_context.h>
-#include <vip_drv_task_descriptor.h>
+#include <task/vip_drv_task_descriptor.h>
 
 #undef VIPDRV_LOG_ZONE
 #define VIPDRV_LOG_ZONE  VIPDRV_LOG_ZONE_TASK

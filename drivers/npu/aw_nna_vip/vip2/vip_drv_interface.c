@@ -52,14 +52,14 @@
 *
 *****************************************************************************/
 
-#include <vip_drv_interface.h>
-#include <vip_lite_version.h>
+#include <inc/vip_drv_interface.h>
+#include <inc/vip_lite_version.h>
 #include <vip_drv_context.h>
 #include <vip_drv_os_port.h>
-#include <vip_drv_device_driver.h>
+#include <os/linux/vip_drv_device_driver.h>
 #include <vip_drv_debug.h>
-#include <vip_drv_task_descriptor.h>
-#include <vip_drv_mmu.h>
+#include <task/vip_drv_task_descriptor.h>
+#include <memory/vip_drv_mmu.h>
 
 #define VIPDRV_CHECK_INIT()                                                    \
 {                                                                              \

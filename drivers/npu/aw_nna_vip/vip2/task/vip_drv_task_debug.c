@@ -53,9 +53,9 @@
 *****************************************************************************/
 
 #include <vip_drv_context.h>
-#include <vip_drv_device_driver.h>
-#include <vip_drv_task_debug.h>
-#include <vip_drv_task_descriptor.h>
+#include <os/linux/vip_drv_device_driver.h>
+#include <task/vip_drv_task_debug.h>
+#include <task/vip_drv_task_descriptor.h>
 #include <vip_drv_debug.h>
 
 #undef VIPDRV_LOG_ZONE

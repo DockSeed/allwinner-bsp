@@ -54,7 +54,7 @@
 #ifndef _VIP_DRV_TASK_DESCRIPTOR_H
 #define _VIP_DRV_TASK_DESCRIPTOR_H
 #include <vip_drv_type.h>
-#include <vip_drv_share.h>
+#include <inc/vip_drv_share.h>
 
 #define TASK_MAGIC_DATA     0x80000000
 #define TASK_INDEX_SHIFT    18

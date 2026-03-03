@@ -51,13 +51,14 @@
 *    version of this file.
 *
 *****************************************************************************/
+
 #include <vip_drv_pm.h>
 #include <vip_drv_debug.h>
-#include <vip_drv_device_driver.h>
-#include <vip_drv_os.h>
-#include <vip_lite_version.h>
-#include <vip_drv_video_memory.h>
-#include <vip_drv_interface.h>
+#include <os/linux/vip_drv_device_driver.h>
+#include <os/linux/vip_drv_os.h>
+#include <inc/vip_lite_version.h>
+#include <memory/vip_drv_video_memory.h>
+#include <inc/vip_drv_interface.h>
 #include <vip_drv_context.h>
 
 #ifndef DEVICE_NAME
@@ -456,24 +457,6 @@ static vip_int32_t  drv_show_params(
         LOOP_CORE_END
         PRINTK("%s\n", info);
 
-        #if defined (USE_LINUX_PCIE_DEVICE)
-        tmp = info;
-        vipdrv_os_copy_memory(tmp, "pciBars             ", NAME_HEADER_SIZE);
-        tmp += NAME_HEADER_SIZE;
-        LOOP_CORE_START
-        vipdrv_os_snprint(tmp, 20, "0x%08x, ", kdriver->pci_bars[core]);
-        tmp += 12;
-        LOOP_CORE_END
-        PRINTK("%s\n", info);
-        tmp = info;
-        vipdrv_os_copy_memory(tmp, "registerOffset      ", NAME_HEADER_SIZE);
-        tmp += NAME_HEADER_SIZE;
-        LOOP_CORE_START
-        vipdrv_os_snprint(tmp, 20, "0x%08x, ", kdriver->reg_offset[core]);
-        tmp += 12;
-        LOOP_CORE_END
-        PRINTK("%s\n", info);
-        #endif
         #if vpmdENABLE_VIDEO_MEMORY_HEAP
         tmp = info;
         vipdrv_os_copy_memory(tmp, "contiguousSize      ", NAME_HEADER_SIZE);
@@ -581,12 +564,10 @@ static vip_int32_t drv_check_params(
 
     for (i = 0; i < kdriver->core_count; i++) {
         axi_sram_size += kdriver->axi_sram_size[i];
-        #ifndef USE_LINUX_PCIE_DEVICE
         if (0 == kdriver->vip_reg_phy[i]) {
             core_count = min(i, core_count);
             break;
         }
-        #endif
         if (0 == kdriver->vip_reg_size[i]) {
             core_count = min(i, core_count);
             PRINTK_E("register size break core count\n");
@@ -663,10 +644,6 @@ static vip_status_e drv_init_params(
         kdriver->irq_line[index] = irqLine[index];
         kdriver->vip_reg_phy[index] = registerMemBase[index];
         kdriver->vip_reg_size[index] = registerMemSize[index];
-        #if defined (USE_LINUX_PCIE_DEVICE)
-        kdriver->pci_bars[index] = pciBars[index];
-        kdriver->reg_offset[index] = registerOffset[index];
-        #endif
     }
 
     return VIP_SUCCESS;
@@ -755,7 +732,7 @@ static vip_int32_t drv_prepare_video_memory(
             prepare_flag = 0;
         }
         else {
-            kdriver->cpu_physical[heap_cnt] = page_to_phys(nth_page(kdriver->pages[heap_cnt], 0));
+            kdriver->cpu_physical[heap_cnt] = page_to_phys(kdriver->pages[heap_cnt]);
             kdriver->heap_infos[heap_cnt].vip_physical =
                                         vipdrv_drv_get_vipphysical(kdriver->cpu_physical[heap_cnt]);
         }
@@ -998,13 +975,6 @@ static vip_int32_t drv_prepare_register(
     }
 
     /* Map the VIP registers. */
-#if defined (USE_LINUX_PCIE_DEVICE)
-    kdriver->vip_reg[core] = (void *)pci_iomap(kdriver->pdev, kdriver->pci_bars[core],
-                                               kdriver->pci_bar_size[kdriver->pci_bars[core]]);
-    kdriver->pci_vip_reg[core] = kdriver->vip_reg[core];
-    PRINTK_D("core_%d bar=%d, map logical base=0x%"PRIx64"\n", core, kdriver->pci_bars[core], kdriver->vip_reg[core]);
-    kdriver->vip_reg[core] = (vip_uint8_t*)kdriver->vip_reg[core] + kdriver->reg_offset[core];
-#else
 {
     vip_char_t *reg_name = VIP_NULL;
     vip_char_t *reg_name_default = "vipcore_reg_def";
@@ -1030,13 +1000,8 @@ static vip_int32_t drv_prepare_register(
             kdriver->vip_reg_phy[core], kdriver->vip_reg_size[core], reg_name);
     }
 
-    #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
     kdriver->vip_reg[core] = ioremap(kdriver->vip_reg_phy[core], kdriver->vip_reg_size[core]);
-    #else
-    kdriver->vip_reg[core] = ioremap_nocache(kdriver->vip_reg_phy[core], kdriver->vip_reg_size[core]);
-    #endif
 }
-#endif
 
     if (kdriver->vip_reg[core] == VIP_NULL) {
         PRINTK_E("core_%d, ioremap failed for VIP memory.\n", core);
@@ -1102,12 +1067,8 @@ static void drv_exit(void)
     if (kdriver->vip_reg[core] != VIP_NULL) {
         if (kdriver->reg_drv_map[core]) {
             /* Unmap the vip registers. */
-        #if defined (USE_LINUX_PCIE_DEVICE)
-            iounmap((void*)kdriver->pci_vip_reg[core]);
-        #else
             iounmap((void*)kdriver->vip_reg[core]);
             release_mem_region(kdriver->vip_reg_phy[core], kdriver->vip_reg_size[core]);
-        #endif
             kdriver->vip_reg[core] = VIP_NULL;
             kdriver->reg_drv_map[core] = 0;
         }
@@ -1347,170 +1308,6 @@ vip_status_e vipdrv_drv_exit(void)
     return status;
 }
 
-#if defined (USE_LINUX_PCIE_DEVICE)
-int vipdrv_pcie_probe(
-    struct pci_dev *pdev,
-    const struct pci_device_id *ent
-    )
-{
-    vip_int32_t ret = -ENODEV;
-    vip_int32_t i = 0;
-    vip_uint32_t total_core = 0;
-
-    kdriver->device_cnt++;
-    if (kdriver->device_cnt > 1) {
-        PRINTK("only support one pcie device, detected cnt=%d\n", kdriver->device_cnt);
-        return ret;
-    }
-
-    if (VIP_NULL == pdev) {
-        PRINTK_E("fail pcie dev is NULL\n");
-        return ret;
-    }
-
-    kdriver->pdev = pdev;
-    kdriver->device = &pdev->dev;
-
-    PRINTK("vipcore, pcie driver device=0x%"PRPx", pdev=%p\n", kdriver->device, kdriver->pdev);
-
-    if (pci_enable_device(pdev)) {
-        PRINTK(KERN_ERR "vipcore, pci_enable_device() failed.\n");
-    }
-    pci_set_master(pdev);
-
-    if (pci_request_regions(pdev, "vipcore")) {
-        PRINTK("vipcore, fail to get ownership of BAR region.\n");
-    }
-    /* adjust parameters from platform code */
-    ret = vipdrv_drv_adjust_param(kdriver);
-    if (ret < 0) {
-        PRINTK("vipcore, fail to adjust parameters\n");
-        return -1;
-    }
-
-    if (kdriver->core_count > vipdMAX_CORE) {
-        PRINTK("vipcore, failed init, the max core=%d core count=%d\n",
-                 vipdMAX_CORE, kdriver->core_count);
-        return -1;
-    }
-
-    if (0 == kdriver->core_count) {
-        kdriver->core_count = 1;
-    }
-
-    for (i = 0; i < kdriver->core_count; i++) {
-        total_core += kdriver->device_core_number[i];
-    }
-    if (0 == total_core) {
-        kdriver->device_core_number[0] = 1;
-    }
-
-    /* power off VIP default */
-    LOOP_CORE_START
-    kdriver->power_status[core] = VIPDRV_POWER_OFF;
-    LOOP_CORE_END
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
-    if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(48))) {
-        PRINTK(KERN_ERR "vipcore, fail to set DMA mask.\n");
-    }
-#else
-    if (pci_set_dma_mask(pdev, DMA_BIT_MASK(48))) {
-        PRINTK(KERN_ERR "vipcore, fail to set DMA mask.\n");
-    }
-#endif
-
-    ret = drv_init();
-    if (ret < 0) {
-        PRINTK_E("vipcore, fail to drv init\n");
-        return -1;
-    }
-
-#if vpmdREGISTER_PCIE_DRIVER
-    pci_set_drvdata(pdev, kdriver);
-#endif
-
-    return ret;
-}
-
-void vipdrv_pcie_remove(
-    struct pci_dev *pdev
-    )
-{
-    drv_exit();
-
-    vipdrv_drv_unadjust_param(kdriver);
-
-    pci_set_drvdata(pdev, NULL);
-    pci_clear_master(pdev);
-    pci_release_regions(pdev);
-    pci_disable_device(pdev);
-
-    return;
-}
-
-static struct pci_driver vipdrv_pcie_driver = {
-    .name = DEVICE_NAME,
-    .probe = vipdrv_pcie_probe,
-    .remove = vipdrv_pcie_remove
-};
-
-static int __init module_drv_init(void)
-{
-    int ret = 0;
-
-    /* Create device structure. */
-    kdriver = kmalloc(sizeof(vipdrv_driver_t), GFP_KERNEL);
-    if (kdriver == NULL) {
-        PRINTK("vipcore, kmalloc failed for driver device.\n");
-        return -1;
-    }
-    PRINTK("vipcore, pcie driver init\n");
-
-    /* Zero structure. */
-    memset(kdriver, 0, sizeof(vipdrv_driver_t));
-    kdriver->pdrv = &vipdrv_pcie_driver;
-    kdriver->log_level = DEFAULT_ENABLE_LOG;
-    kdriver->func_config.enable_capture = DEFAULT_ENABLE_CAPTURE;
-    kdriver->func_config.enable_cnn_profile = DEFAULT_ENABLE_CNN_PROFILE;
-    kdriver->func_config.enable_dump_nbg = DEFAULT_ENABLE_DUMP_NBG;
-
-    /* initialize parameters */
-    drv_init_params(kdriver);
-
-    vipdrv_drv_platform_init(kdriver);
-
-#if vpmdREGISTER_PCIE_DRIVER
-    ret = pci_register_driver(kdriver->pdrv);
-#else
-    PRINTK("not register pcie driver, used probed device\n");
-    ret = vipdrv_pcie_probe(kdriver->pdev, NULL);
-#endif
-    if (ret < 0) {
-        PRINTK(KERN_ERR "vipcore, vip drv init() fail to register driver!\n");
-        return ret;
-    }
-
-    return 0;
-}
-
-static void __exit module_drv_exit(void)
-{
-#if vpmdREGISTER_PCIE_DRIVER
-    pci_unregister_driver(&vipdrv_pcie_driver);
-#else
-    vipdrv_pcie_remove(kdriver->pdev);
-#endif
-
-    vipdrv_drv_platform_uninit(kdriver);
-
-    /* Free up the device structure. */
-    kfree(kdriver);
-    kdriver = VIP_NULL;
-    PRINTK("vipcore, pcie driver exit\n");
-}
-
-#elif defined (USE_LINUX_PLATFORM_DEVICE)
 /* Linux platform device driver */
 static vip_int32_t vipdrv_platform_probe(
     struct platform_device *pdev
@@ -1567,15 +1364,13 @@ static vip_int32_t vipdrv_platform_probe(
     return ret;
 }
 
-static vip_int32_t vipdrv_platform_remove(
+static void vipdrv_platform_remove(
     struct platform_device *pdev
     )
 {
     drv_exit();
 
     vipdrv_drv_unadjust_param(kdriver);
-
-    return 0;
 }
 
 static void vipdrv_platform_shutdown(struct platform_device *pdev)
@@ -1635,7 +1430,6 @@ static int vipdrv_system_resume(
 static const struct dev_pm_ops vipdrv_dev_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(vipdrv_system_suspend, vipdrv_system_resume)
 };
-#endif
 #endif
 
 static struct platform_driver vipdrv_platform_driver = {

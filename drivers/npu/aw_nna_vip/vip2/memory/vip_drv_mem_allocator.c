@@ -52,13 +52,13 @@
 *
 *****************************************************************************/
 
-#include <vip_drv_mem_allocator.h>
+#include <memory/vip_drv_mem_allocator.h>
 #include <vip_drv_context.h>
-#include <vip_drv_mem_heap.h>
-#include <vip_drv_mem_allocator_array.h>
-#include <vip_drv_device_driver.h>
+#include <memory/vip_drv_mem_heap.h>
+#include <os/linux/allocator/vip_drv_mem_allocator_array.h>
+#include <os/linux/vip_drv_device_driver.h>
 #if vpmdENABLE_MMU
-#include <vip_drv_mmu.h>
+#include <memory/vip_drv_mmu.h>
 #endif
 
 #undef VIPDRV_LOG_ZONE

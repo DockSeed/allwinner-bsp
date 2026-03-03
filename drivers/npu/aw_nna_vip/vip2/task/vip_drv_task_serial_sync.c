@@ -52,7 +52,7 @@
 *
 *****************************************************************************/
 
-#include <vip_drv_task_common.h>
+#include <task/vip_drv_task_common.h>
 #if vpmdTASK_SERIAL_SYNC
 #include <vip_drv_context.h>
 

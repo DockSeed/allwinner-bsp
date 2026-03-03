@@ -52,10 +52,10 @@
 *
 *****************************************************************************/
 
-#include <vip_drv_task_common.h>
+#include <task/vip_drv_task_common.h>
 #if vpmdTASK_SINGLE
 #include <vip_drv_context.h>
-#include <vip_drv_device_driver.h>
+#include <os/linux/vip_drv_device_driver.h>
 #include <vip_drv_debug.h>
 
 #undef VIPDRV_LOG_ZONE

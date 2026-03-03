@@ -53,15 +53,15 @@
 *****************************************************************************/
 
 #include <vip_drv_debug.h>
-#include <vip_lite_version.h>
-#include <vip_drv_task_common.h>
-#include <vip_drv_mmu.h>
-#include <vip_drv_mem_heap.h>
-#include <vip_drv_device_driver.h>
+#include <inc/vip_lite_version.h>
+#include <task/vip_drv_task_common.h>
+#include <memory/vip_drv_mmu.h>
+#include <memory/vip_drv_mem_heap.h>
+#include <os/linux/vip_drv_device_driver.h>
 #include <vip_drv_context.h>
-#include <vip_drv_task_descriptor.h>
-#include <vip_drv_task_debug.h>
-#include <vip_drv_mem_allocator.h>
+#include <task/vip_drv_task_descriptor.h>
+#include <task/vip_drv_task_debug.h>
+#include <memory/vip_drv_mem_allocator.h>
 
 
 #define ENABLE_DUMP_AHB_REGISTER       0
@@ -922,7 +922,7 @@ vip_status_e vipdrv_dump_AHB_register(
 }
 #endif
 
-vip_status_e vipdrv_dump_video_memory(
+static vip_status_e vipdrv_dump_video_memory(
     vipdrv_task_t *task
     )
 {

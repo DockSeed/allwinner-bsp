@@ -52,7 +52,7 @@
 *
 *****************************************************************************/
 #include <vip_drv_util.h>
-#include <vip_drv_device_driver.h>
+#include <os/linux/vip_drv_device_driver.h>
 
 /*
   when high-priority network lack of resource (eg. need core 0&1, but only core 0 is idle),

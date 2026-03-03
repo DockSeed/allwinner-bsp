@@ -56,7 +56,7 @@
 #if vpmdENABLE_POWER_MANAGEMENT
 #include <vip_drv_pm.h>
 #endif
-#include <vip_drv_video_memory.h>
+#include <memory/vip_drv_video_memory.h>
 #include <vip_drv_context.h>
 
 /*

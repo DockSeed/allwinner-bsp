@@ -52,16 +52,16 @@
 *
 *****************************************************************************/
 
-#include <vip_drv_mem_allocator.h>
-#include <vip_drv_video_memory.h>
-#include <vip_drv_mem_allocator_common.h>
-#include "vip_drv_device_driver.h"
+#include <memory/vip_drv_mem_allocator.h>
+#include <memory/vip_drv_video_memory.h>
+#include <os/linux/allocator/vip_drv_mem_allocator_common.h>
+#include <os/linux/vip_drv_device_driver.h>
 
 #undef VIPDRV_LOG_ZONE
 #define VIPDRV_LOG_ZONE  VIPDRV_LOG_ZONE_VIDEO_MEMORY
 
 
-vip_char_t* page_str(
+static vip_char_t* page_str(
     vipdrv_mem_flag_e mem_flag
     )
 {
@@ -74,7 +74,7 @@ vip_char_t* page_str(
     }
 }
 
-vip_uint32_t get_page_shift(
+static vip_uint32_t get_page_shift(
     vipdrv_mem_flag_e mem_flag
     )
 {
@@ -284,7 +284,7 @@ static vip_status_e vipdrv_mem_alloc_segment_continue(
             ptr->physical_num = i;
             vipGoOnError(VIP_ERROR_IO);
         }
-        cpu_physical = page_to_phys(nth_page(PagesSeg[i], 0));
+        cpu_physical = page_to_phys(PagesSeg[i]);
         if (0 == cpu_physical) {
             #if DEBUG_ALLOCATOR
             PRINTK("error %s allocator cpu_physical address is 0\n", page_str(allocator->mem_flag));

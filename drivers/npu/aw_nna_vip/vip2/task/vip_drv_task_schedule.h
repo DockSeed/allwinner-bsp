@@ -54,7 +54,7 @@
 #ifndef _VIP_DRV_TASK_SCHEDULE_H
 #define _VIP_DRV_TASK_SCHEDULE_H
 #include <vip_drv_type.h>
-#include <vip_drv_share.h>
+#include <inc/vip_drv_share.h>
 
 #if vpmdTASK_QUEUE_USED
 typedef struct vipdrv_core_load
