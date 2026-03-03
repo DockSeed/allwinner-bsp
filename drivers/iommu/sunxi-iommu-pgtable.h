@@ -16,80 +16,14 @@
  * more details.
  *
  */
-#ifndef __SUNXI_IOMMU_PGTALBE__
-#define __SUNXI_IOMMU_PGTALBE__
+#ifndef __SUNXI_IOMMU_PGTABLE__
+#define __SUNXI_IOMMU_PGTABLE__
 #include <linux/iommu.h>
 
-#if IS_ENABLED(CONFIG_AW_IOMMU_V1)
-#define AW_IOMMU_PGTABLE_V1
-#elif IS_ENABLED(CONFIG_AW_IOMMU_V2) || IS_ENABLED(CONFIG_AW_IOMMU_V3)
 #define AW_IOMMU_PGTABLE_V2
-#endif
+
 #define SUNXI_PHYS_OFFSET 0x40000000UL
 
-#if defined(AW_IOMMU_PGTABLE_V1)
-#define IOMMU_VA_BITS 32
-
-#define IOMMU_PD_SHIFT 20
-#define IOMMU_PD_MASK (~((1UL << IOMMU_PD_SHIFT) - 1))
-
-#define IOMMU_PT_SHIFT 12
-#define IOMMU_PT_MASK (~((1UL << IOMMU_PT_SHIFT) - 1))
-
-#define SPAGE_SIZE (1 << IOMMU_PT_SHIFT)
-#define SPD_SIZE (1 << IOMMU_PD_SHIFT)
-#define SPAGE_ALIGN(addr) ALIGN(addr, SPAGE_SIZE)
-#define SPDE_ALIGN(addr) ALIGN(addr, SPD_SIZE)
-
-/*
- * This version Hardware just only support 4KB page. It have
- * a two level page table structure, where the first level has
- * 4096 entries, and the second level has 256 entries. And, the
- * first level is "Page Directory(PG)", every entry include a
- * Page Table base address and a few of control bits. Second
- * level is "Page Table(PT)", every entry include a physical
- * page address and a few of control bits. Each entry is one
- * 32-bit word. Most of the bits in the second level entry are
- * used by hardware.
- *
- * Virtual Address Format:
- *     31              20|19        12|11     0
- *     +-----------------+------------+--------+
- *     |    PDE Index    |  PTE Index | offset |
- *     +-----------------+------------+--------+
- *
- * Table Layout:
- *
- *      First Level         Second Level
- *   (Page Directory)       (Page Table)
- *   ----+---------+0
- *    ^  |  PDE   |   ---> -+--------+----
- *    |  ----------+1       |  PTE   |  ^
- *    |  |        |         +--------+  |
- *       ----------+2       |        |  1K
- *   16K |        |         +--------+  |
- *       ----------+3       |        |  v
- *    |  |        |         +--------+----
- *    |  ----------
- *    |  |        |
- *    v  |        |
- *   ----+--------+
- *
- * IOPDE:
- * 31                     10|9       0
- * +------------------------+--------+
- * |   PTE Base Address     |CTRL BIT|
- * +------------------------+--------+
- *
- * IOPTE:
- * 31                  12|11         0
- * +---------------------+-----------+
- * |  Phy Page Address   |  CTRL BIT |
- * +---------------------+-----------+
- *
- */
-
-#elif defined(AW_IOMMU_PGTABLE_V2)
 #define IOMMU_VA_BITS 34
 
 #define IOMMU_PD_SHIFT 22
@@ -102,8 +36,6 @@
 #define SPD_SIZE (1 << IOMMU_PD_SHIFT)
 #define SPAGE_ALIGN(addr) ALIGN(addr, SPAGE_SIZE)
 #define SPDE_ALIGN(addr) ALIGN(addr, SPD_SIZE)
-
-#endif
 
 /*
  * cpu phy 0x0000 0000 ~ 0x4000 0000 is reserved for IO access,

@@ -35,20 +35,19 @@
  */
 #define DENT_VALID 0x01
 #define DENT_PTE_SHFIT 10
-#if defined(AW_IOMMU_PGTABLE_V2)
+
 #define DENT_ADDR_HIGH_SHIFT 8
 #define DENT_ADDR_HIGH_MASK (0x3 << DENT_ADDR_HIGH_SHIFT)
-#endif
+
 #define DENT_WRITABLE BIT(3)
 #define DENT_READABLE BIT(2)
 
 /*
  * Page Table Entry Control Bits
  */
-#if defined(AW_IOMMU_PGTABLE_V2)
 #define SUNXI_PTE_PAGE_ADDR_HIGH_SHIFT 8
 #define SUNXI_PTE_PAGE_ADDR_HIGH_MASK (0x3 << SUNXI_PTE_PAGE_ADDR_HIGH_SHIFT)
-#endif
+
 #define SUNXI_PTE_PAGE_WRITABLE BIT(3)
 #define SUNXI_PTE_PAGE_READABLE BIT(2)
 #define SUNXI_PTE_PAGE_VALID BIT(1)
@@ -60,15 +59,12 @@
 
 #define IOPTE_BASE(ent) ((ent)&IOPTE_BASE_MASK)
 
-#if defined(AW_IOMMU_PGTABLE_V1)
-#define IOPTE_TO_PFN(ent) ((*ent) & IOMMU_PT_MASK)
-#elif defined(AW_IOMMU_PGTABLE_V2)
 #define IOPTE_TO_PFN(ent)                                 \
 	(((*ent) & IOMMU_PT_MASK) |                       \
 	 ((u64)((*ent & SUNXI_PTE_PAGE_ADDR_HIGH_MASK) >> \
 		SUNXI_PTE_PAGE_ADDR_HIGH_SHIFT)           \
 	  << 32))
-#endif
+
 #define IOVA_PAGE_OFT(va) ((va)&PAGE_OFFSET_MASK)
 
 /* IO virtual address start page frame number */
@@ -96,11 +92,11 @@ static inline u32 *iopte_offset(u32 *ent, dma_addr_t iova)
 	u64 iopte_base = 0;
 
 	iopte_base = IOPTE_BASE(*ent);
-#if defined(AW_IOMMU_PGTABLE_V2)
+
 	iopte_base |=
 		(u64)((*ent & DENT_ADDR_HIGH_MASK) >> DENT_ADDR_HIGH_SHIFT)
 		<< 32;
-#endif
+	
 	iopte_base = iommu_phy_to_cpu_phy(iopte_base);
 
 	return (u32 *)__va(iopte_base) + IOPTE_INDEX(iova);
@@ -124,10 +120,10 @@ static int sunxi_alloc_iopte(u32 *sent, int prot)
 				virt_to_phys(sent), sizeof(*sent),
 				DMA_TO_DEVICE);
 	*sent = cpu_phy_to_iommu_phy(__pa(pent)) | DENT_VALID;
-#if defined(AW_IOMMU_PGTABLE_V2)
+	
 	*sent |= ((__pa(pent) >> 32) << DENT_ADDR_HIGH_SHIFT) &
 		 DENT_ADDR_HIGH_MASK;
-#endif
+
 	dma_sync_single_for_device(sunxi_pgtable_params.dma_dev,
 				   virt_to_phys(sent), sizeof(*sent),
 				   DMA_TO_DEVICE);
@@ -148,10 +144,9 @@ static inline u32 sunxi_mk_pte(phys_addr_t page, int prot)
 	flags |= (prot & IOMMU_READ) ? SUNXI_PTE_PAGE_READABLE : 0;
 	flags |= (prot & IOMMU_WRITE) ? SUNXI_PTE_PAGE_WRITABLE : 0;
 	page &= IOMMU_PT_MASK;
-#if defined(AW_IOMMU_PGTABLE_V2)
+	
 	high_addr = ((page >> 32) << SUNXI_PTE_PAGE_ADDR_HIGH_SHIFT) &
 		    SUNXI_PTE_PAGE_ADDR_HIGH_MASK;
-#endif
 
 	return page | high_addr | flags | SUNXI_PTE_PAGE_VALID;
 }
