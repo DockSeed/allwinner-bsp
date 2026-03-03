@@ -236,7 +236,7 @@ static int _dw_audio_i2s_config(struct dw_audio_s *audio)
 	return 0;
 }
 
-void _dw_audio_acr_config(u32 freq, u32 clock)
+static void _dw_audio_acr_config(u32 freq, u32 clock)
 {
 	u8 multi_factor = 1, index = 0, i = 0, mode = 0;
 	u32 acr_n = 0, acr_cts = 0;
@@ -1197,7 +1197,7 @@ int dw_video_dump_disp_info(void)
 	return 0;
 }
 
-ssize_t dw_audio_dump(char *buf)
+static ssize_t dw_audio_dump(char *buf)
 {
 	int n = 0;
 	u32 state = dw_mc_irq_get_state(DW_MC_IRQ_AS);
@@ -1219,7 +1219,7 @@ ssize_t dw_audio_dump(char *buf)
 	return n;
 }
 
-ssize_t dw_video_dump(char *buf)
+static ssize_t dw_video_dump(char *buf)
 {
 	int n = 0;
 	struct dw_video_s *video = dw_get_video();

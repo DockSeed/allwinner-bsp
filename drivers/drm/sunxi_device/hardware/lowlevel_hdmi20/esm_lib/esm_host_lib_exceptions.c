@@ -11,7 +11,7 @@
 #include "include/ESMHost.h"
 
 /* Puts an entry into the FIFO */
-void esm_hostlib_put_exception(esm_instance_t *esm, uint32_t c)
+static void esm_hostlib_put_exception(esm_instance_t *esm, uint32_t c)
 {
 	int i = (esm->exp_status_buffer.head + 1) % EX_BUFFER_SIZE;
 

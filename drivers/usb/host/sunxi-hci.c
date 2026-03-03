@@ -992,98 +992,6 @@ void sunxi_hci_set_siddq(struct sunxi_hci_hcd *sunxi_hci, int is_on)
 	USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL));
 }
 
-void sunxi_hci_set_vc_cfg(struct sunxi_hci_hcd *sunxi_hci, int is_on)
-{
-	int reg_value = 0;
-
-	if (is_on) {
-		/* must be set before host clk from ccu close */
-		/* com_tune bit[9] set to 1 when enter usb standby */
-		reg_value = USBC_Readl(sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL);
-		reg_value &= ~((0x01 << 7)|(0xff << 8)|(0x01 << 1)|(0x01 << 0)); /* clear phy vc cfg */
-		reg_value |= (0x01 << 7)|(0x39 << 8)|(0x01 << 1)|(0x0 << 0); /* bit[15:8] vc_addr */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL));
-		mdelay(10);
-
-		reg_value &= ~((0x01 <<7)|(0xff << 8)|(0x01 << 1)|(0x01 << 0)); /* clear phy vc cfg */
-		reg_value |= (0x01 << 7)|(0x39 << 8)|(0x01 << 1)|(0x01 << 0); /* bit[15:8] vc_addr */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL));
-
-		/* com_tune bit[10] set to 1 when enter usb standby */
-		reg_value = USBC_Readl(sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL);
-		reg_value &= ~((0x01 << 7)|(0xff << 8)|(0x01 << 1)|(0x01 << 0)); /* clear phy vc cfg */
-		reg_value |= (0x01 << 7)|(0x3a << 8)|(0x01 << 1)|(0x0 << 0); /* bit[15:8] vc_addr */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL));
-		mdelay(10);
-
-		reg_value &= ~((0x01 << 7)|(0xff << 8)|(0x01 << 1)|(0x01 << 0)); /* clear phy vc cfg */
-		reg_value |= (0x01 << 7)|(0x3a << 8)|(0x01 << 1)|(0x1 << 0); /* bit[15:8] vc_addr */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL));
-
-		reg_value = USBC_Readl(sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL);
-		reg_value &= ~(0x01 << 1); /* clear phy vc en */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL));
-	} else {
-		/* cfg after switch to hclk from ccu */
-		/* com_tune bit[9] set to 0 when exit usb standby */
-		reg_value = USBC_Readl(sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL);
-		reg_value &= ~((0x01 << 7)|(0xff << 8)|(0x01 << 1)|(0x01 << 0)); /* clear phy vc cfg */
-		reg_value |= (0x0 << 7)|(0x39 << 8)|(0x01 << 1)|(0x0 << 0); /* bit[15:8] vc_addr */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL));
-		mdelay(10);
-
-		reg_value &= ~((0x01 << 7)|(0xff << 8)|(0x01 << 1)|(0x01 << 0)); /* clear phy vc cfg */
-		reg_value |= (0x0 << 7)|(0x39 << 8)|(0x01 << 1)|(0x01 << 0); /* bit[15:8] vc_addr */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL));
-
-		/* com_tune bit[10] set to 0 when exit usb standby */
-		reg_value = USBC_Readl(sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL);
-		reg_value &= ~((0x01 << 7)|(0xff << 8)|(0x01 << 1)|(0x01 << 0)); /* clear phy vc cfg */
-		reg_value |= (0x0 << 7)|(0x3a << 8)|(0x01 << 1)|(0x0 << 0); /* bit[15:8] vc_addr */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL));
-		mdelay(10);
-
-		reg_value &= ~((0x01 << 7)|(0xff << 8)|(0x01 << 1)|(0x01 << 0)); /* clear phy vc cfg */
-		reg_value |= (0x0 << 7)|(0x3a << 8)|(0x01 << 1)|(0x1 << 0); /* bit[15:8] vc_addr */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL));
-
-		reg_value = USBC_Readl(sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL);
-		reg_value &= ~(0x01 << 1); /* clear phy vc en */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_PHY_CTRL));
-	}
-}
-
-void sunxi_hci_set_clk(struct sunxi_hci_hcd *sunxi_hci, int is_on)
-{
-	int reg_value = 0;
-
-	if (is_on) {
-		/* usb clk switch to rc16M */
-		reg_value = USBC_Readl(sunxi_hci->usb_vbase + SUNXI_HCI_USB_CTRL);
-		reg_value |= (0x01 << SUNXI_HCI_STANDBY_CLK_SEL);
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_USB_CTRL));
-
-		udelay(1);
-
-		/* RC gen and rc clock ungated */
-		reg_value = USBC_Readl(sunxi_hci->usb_vbase + SUNXI_HCI_USB_CTRL);
-		reg_value |= ((0x01 << SUNXI_HCI_RC_CLK_GATING) | (0x01 << SUNXI_HCI_RC_GEN_ENABLE)); /* 0xc */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_USB_CTRL));
-	} else {
-		/* RC disable and rc clock gated */
-		reg_value = USBC_Readl(sunxi_hci->usb_vbase + SUNXI_HCI_USB_CTRL);
-		reg_value &= ~((0x01 << SUNXI_HCI_RC_CLK_GATING) | (0x01 << SUNXI_HCI_RC_GEN_ENABLE)); /* 0xc */
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_USB_CTRL));
-
-		udelay(1);
-
-		/* usb clk switch to ccu clk */
-		reg_value = USBC_Readl(sunxi_hci->usb_vbase + SUNXI_HCI_USB_CTRL);
-		reg_value &= ~(0x01 << SUNXI_HCI_STANDBY_CLK_SEL);
-		USBC_Writel(reg_value, (sunxi_hci->usb_vbase + SUNXI_HCI_USB_CTRL));
-	}
-}
-
 void sunxi_hci_set_wakeup_ctrl(struct sunxi_hci_hcd *sunxi_hci, int is_on)
 {
 	int reg_value = 0;
@@ -2568,10 +2476,6 @@ void enter_usb_standby(struct sunxi_hci_hcd *sunxi_hci)
 		/* phy reg, offset:0x810 bit3 set 1, clean siddq */
 		sunxi_hci_set_siddq(sunxi_hci, 1);
 #endif
-#if IS_ENABLED(CONFIG_ARCH_SUN8IW21)
-		sunxi_hci_set_vc_cfg(sunxi_hci, 1);
-		sunxi_hci_set_clk(sunxi_hci, 1);
-#endif
 #endif
 #endif
 #if IS_ENABLED(CONFIG_ARCH_SUN50IW10) || IS_ENABLED(CONFIG_ARCH_SUN55IW3) \
@@ -2612,10 +2516,6 @@ void exit_usb_standby(struct sunxi_hci_hcd *sunxi_hci)
 		sunxi_hci_switch_clk(sunxi_hci, 0);
 #endif
 #if IS_ENABLED(SUNXI_USB_STANDBY_LOW_POW_MODE)
-#if IS_ENABLED(CONFIG_ARCH_SUN8IW21)
-		sunxi_hci_set_clk(sunxi_hci, 0);
-		sunxi_hci_set_vc_cfg(sunxi_hci, 0);
-#endif
 #if !IS_ENABLED(SUNXI_USB_STANDBY_SIDDQ_BYPASS)
 		/* phy reg, offset:0x10 bit3 set 0, enable siddq */
 		sunxi_hci_set_siddq(sunxi_hci, 0);

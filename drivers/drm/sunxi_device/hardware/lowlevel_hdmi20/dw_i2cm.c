@@ -30,7 +30,7 @@
 
 static DECLARE_WAIT_QUEUE_HEAD(i2cm_wq);
 
-struct dw_i2cm_s *dw_get_i2cm(void)
+static struct dw_i2cm_s *dw_get_i2cm(void)
 {
 	struct dw_hdmi_dev_s  *hdmi = dw_get_hdmi();
 
@@ -76,7 +76,7 @@ static u8 _dw_i2cm_state(void)
 	return dw_read(IH_I2CM_STAT0);
 }
 
-int _dw_i2cm_read(unsigned char *buf, unsigned int length)
+static int _dw_i2cm_read(unsigned char *buf, unsigned int length)
 {
 	struct dw_i2cm_s *i2cm = dw_get_i2cm();
 	u8 state = 0x0, retry_cnt = 5, read_mode = 1;
@@ -145,7 +145,7 @@ int _dw_i2cm_read(unsigned char *buf, unsigned int length)
 	return 0;
 }
 
-int _dw_i2cm_write(unsigned char *buf, unsigned int length)
+static int _dw_i2cm_write(unsigned char *buf, unsigned int length)
 {
 	struct dw_i2cm_s *i2cm = dw_get_i2cm();
 	u8 state = 0x0, retry_cnt = 5;

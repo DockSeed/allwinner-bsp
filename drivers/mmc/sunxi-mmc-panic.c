@@ -635,8 +635,9 @@ static void sunxi_mmc_raw_stop(void __iomem *reg)
 		} else {
 			mmcdbg("send manual stop command ok\n");
 			}
-	} else
+	} else {
 		mmcdbg("send manual stop command ok\n");
+	}
 
 
 	mmc_mwritel(reg, REG_RINTR, 0xffff);

@@ -10,17 +10,6 @@
  ******************************************************************************/
 #include "include/ESMHost.h"
 
-void boot_fail_check(esm_instance_t *esm)
-{
-	u32 reg = 0;
-
-	esm->driver->hpi_read(esm->driver->instance,
-				ESM_REG_AE_ERR_STAT0(HPI_HOST_OFF),
-				&reg);
-
-	hdmi_inf("boot_fail_check 0x60:%x", reg);
-}
-
 
 ESM_STATUS ESM_GetStatusRegister(esm_instance_t *esm, esm_status_t *status,
 							uint8_t clear)

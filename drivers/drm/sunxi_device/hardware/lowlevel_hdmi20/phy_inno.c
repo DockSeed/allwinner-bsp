@@ -242,7 +242,7 @@ static void _inno_turn_resistor_ctrl(u8 state)
 	}
 }
 
-void _inno_phy_config_4k60(void)
+static void _inno_phy_config_4k60(void)
 {
 	/* resence config */
 	phy_base->hdmi_phy_dr5_2.bits.terrescal_clkdiv0 = 0xF0;
@@ -271,7 +271,7 @@ void _inno_phy_config_4k60(void)
 	phy_base->hdmi_phy_dr5_1.bits.terrescal_bp = 0x0;
 }
 
-void _inno_phy_config_4k30(void)
+static void _inno_phy_config_4k30(void)
 {
 	if (inno_phy.version == INNO_PHY_VERSION_0)
 		return ;
@@ -584,14 +584,9 @@ mpll_cfg:
 	return 0;
 }
 
-void inno_phy_set_reg_base(uintptr_t base)
+static void inno_phy_set_reg_base(uintptr_t base)
 {
 	phy_base = (struct __inno_phy_reg_t *)(base + INNO_PHY_REG_OFFSET);
-}
-
-uintptr_t inno_phy_get_reg_base(void)
-{
-	return (uintptr_t)phy_base;
 }
 
 int inno_phy_write(u8 addr, void *data)

@@ -417,25 +417,6 @@ static s32 de_wb_stop(struct de_wb_handle *handle)
 	return 0;
 }
 
-void force_update(struct de_wb_handle *handle)
-{
-	int i, j;
-	struct de_reg_block *blk;
-	u32 *val;
-	u32 *tmp;
-	for (i = 0; i < handle->block_num; i++) {
-		blk = handle->block[i];
-		if (blk->dirty) {
-			for (j = 0; j < blk->size; j++) {
-				val = (u32 *)(blk->vir_addr);
-				tmp = (u32 *)(blk->reg_addr);
-				writel(val[j], &tmp[j]);
-			}
-			printk("update dirty\n");
-		}
-	}
-}
-
 int de_wb_apply(struct de_wb_handle *handle, struct wb_in_config *in, struct drm_framebuffer *out_fb)
 {
 	if (out_fb == NULL) {
@@ -451,7 +432,7 @@ int de_wb_apply(struct de_wb_handle *handle, struct wb_in_config *in, struct drm
 
 	de_wb_set_csc_para(handle, &in->csc_info, out_fb);
 	de_wb_writeback_enable(handle);
-	//force_update(handle);
+	
 	DRM_INFO("[SUNXI-CRTC]%s ok\n", __func__);
 	return 0;
 }

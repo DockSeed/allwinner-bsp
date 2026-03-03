@@ -31,7 +31,6 @@
 #include "sunxi-sid.h"
 
 #define SUNXI_UFS_DRIVER_VESION "0.0.18 2025.5.16 15:16"
-//#define PHY_DEBUG_DUMP
 //#define CCU_DBG
 #define SUNXI_UFS_AXI_CLK		(200*1000*1000)
 #define SUNXI_UFS_CAL_WORDS_EFUSE_ALIGN_LOW         (0x60)
@@ -237,25 +236,6 @@ int ufshcd_sunxi_dme_set_attrs(struct ufs_hba *hba,
 	return 0;
 }
 
-static int ufshcd_sunxi_dme_dump_attrs(struct ufs_hba *hba,
-				const struct ufshcd_dme_attr_val *v, int n)
-{
-	int ret = 0;
-	int attr_node = 0;
-	u32 value = 0;
-
-	for (attr_node = 0; attr_node < n; attr_node++) {
-		ret = ufshcd_dme_get_attr(hba, v[attr_node].attr_sel,
-			&value, v[attr_node].peer);
-		if (ret)
-			return ret;
-		dev_err(hba->dev, "dme attr sel 0x%08x, value 0x%08x\n",\
-					v[attr_node].attr_sel, value);
-	}
-
-	return 0;
-}
-
 /**
  * tc_sunxi_g240_c10_read()
  *
@@ -453,10 +433,6 @@ static int sunxi_ufs_rmmi_config(struct ufs_hba *hba)
 		return ret;
 	}
 
-#ifdef PHY_DEBUG_DUMP
-	ufshcd_sunxi_dme_dump_attrs(hba, rmmi_config, ARRAY_SIZE(rmmi_config));
-#endif
-
 
 /*
  *15.De-assert.phy_reset
@@ -523,18 +499,6 @@ static int sunxi_ufs_rmmi_config(struct ufs_hba *hba)
 				return ret;
 			}
 		}
-#ifdef PHY_DEBUG_DUMP
-		for (i = 0; i < ARRAY_SIZE(phy_cr_data_coarse_tune); i++) {
-			const struct pair_addr *data = &phy_cr_data_coarse_tune[i];
-			u16 value = 0;
-			ret = tc_sunxi_cr_read(hba, data->addr, &value);
-			if (ret) {
-				dev_err(hba->dev, "%s: c10 write failed\n", __func__);
-				return ret;
-			}
-			dev_err(hba->dev, "phy cr addr 0x%08x, value 0x%08x\n", data->addr, value);
-		}
-#endif
 	}
 
 
@@ -574,31 +538,6 @@ static int sunxi_ufs_rmmi_config(struct ufs_hba *hba)
 			}
 		}
 
-#ifdef PHY_DEBUG_DUMP
-		for (i = 0; i < ARRAY_SIZE(phy_cr_data_afe_cal_words); i++) {
-			const struct pair_addr *data = &phy_cr_data_afe_cal_words[i];
-			u16 value = 0;
-			ret = tc_sunxi_cr_read(hba, data->addr, &value);
-			if (ret) {
-				dev_err(hba->dev, "%s: c10 read failed\n", __func__);
-				return ret;
-			}
-			dev_err(hba->dev, "phy cr addr 0x%08x, value 0x%08x\n", data->addr, value);
-		}
-
-		for (i = 0; i < ARRAY_SIZE(phy_cr_data_pll_auto_cal); i++) {
-			const struct pair_addr *data = &phy_cr_data_pll_auto_cal[i];
-			u16 value = 0;
-			ret = tc_sunxi_cr_read(hba, data->addr, &value);
-			if (ret) {
-				dev_err(hba->dev, "%s: c10 read failed\n", __func__);
-				return ret;
-			}
-			dev_err(hba->dev, "phy cr addr 0x%08x, value 0x%08x\n", data->addr, value);
-		}
-
-#endif
-
 	}
 	if (!pll_rate_b && !pll_rate_a) {
 		/*use auto pll cal**/
@@ -611,19 +550,6 @@ static int sunxi_ufs_rmmi_config(struct ufs_hba *hba)
 			}
 		}
 		dev_info(hba->dev, "auto pll cal\n");
-
-#ifdef PHY_DEBUG_DUMP
-		for (i = 0; i < ARRAY_SIZE(phy_cr_data_pll_auto_cal); i++) {
-			const struct pair_addr *data = &phy_cr_data_pll_auto_cal[i];
-			u16 value = 0;
-			ret = tc_sunxi_cr_read(hba, data->addr, &value);
-			if (ret) {
-				dev_err(hba->dev, "%s: c10 read failed\n", __func__);
-				return ret;
-			}
-			dev_err(hba->dev, "phy cr addr 0x%08x, value 0x%08x\n", data->addr, value);
-		}
-#endif
 	}
 
 

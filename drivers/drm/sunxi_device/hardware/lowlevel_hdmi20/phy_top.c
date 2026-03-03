@@ -170,7 +170,7 @@ u8 top_phy_pll_get_lock(void)
 	return state;
 }
 
-void top_phy_pll_set_output(u8 state)
+static void top_phy_pll_set_output(u8 state)
 {
 	volatile struct top_phy_regs *phy_reg = top_phy.phy_addr;
 

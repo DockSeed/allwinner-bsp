@@ -339,7 +339,7 @@ static inline union de_top_rcq_ctl_reg *get_de_top_reg(struct de_top_private *pr
 	return (union de_top_rcq_ctl_reg *)(priv->reg_blks[DE_RCQ_CTL_REG_BLK].vir_addr);
 }
 
-const struct de_top_desc *get_de_top_desc(const struct module_create_info *info)
+static const struct de_top_desc *get_de_top_desc(const struct module_create_info *info)
 {
 	int i;
 	for (i = 0; i < ARRAY_SIZE(de_version); i++) {
@@ -744,19 +744,6 @@ static int de_top_display_config_v2(struct de_top_handle *hdl, const struct de_t
 	return 0;
 }
 
-int de_top_get_out_size(struct de_top_handle *hdl, u32 disp, u32 *width, u32 *height)
-{
-	u8 __iomem *de_base = hdl->cinfo.de_reg_base;
-	u8 __iomem *reg_base = de_base + DE_REG_OFFSET(RTMX_OUT_SIZE_OFFSET, disp, 0x40);
-	u32 reg_val = readl(reg_base);
-
-	if (width)
-		*width = (reg_val & 0x1FFF) + 1;
-	if (height)
-		*height = ((reg_val >> 16) & 0x1FFF) + 1;
-	return 0;
-}
-
 int de_top_wb_config(struct de_top_handle *hdl, const struct de_top_wb_cfg *cfg)
 {
 	u8 __iomem *de_base = hdl->cinfo.de_reg_base;
@@ -1002,20 +989,6 @@ s32 de_top_dfs_config_enable(struct de_top_handle *hdl, struct dfs_cfg *cfg)
 	 */
 	m = m > 0 ? m - 1 : m;
 	return de_top_set_dfs_divison_enable(hdl, cfg->display_id, n, m, cfg->enable);
-}
-
-int de_top_enable_irq(struct de_top_handle *hdl, u32 disp, u32 irq_flag, u32 en)
-{
-	u8 __iomem *de_base = hdl->cinfo.de_reg_base;
-	u8 __iomem *reg_base = de_base + DE_REG_OFFSET(RTMX_GLB_CTL_OFFSET, disp, 0x40);
-	u32 reg_val = readl(reg_base);
-
-	if (en)
-		reg_val |= irq_flag;
-	else
-		reg_val &= ~irq_flag;
-	writel(reg_val, reg_base);
-	return 0;
 }
 
 static unsigned int de_top_query_state_with_clear(struct de_top_handle *hdl, u32 disp, u32 irq_state)

@@ -159,7 +159,7 @@ static int de_crc_enable(struct de_crc_handle *hdl, u32 region, u32 enable, u32 
 	return 0;
 }
 
-s32 de_crc_set_polarity(struct de_crc_handle *hdl, u32 region, u32 polarity)
+static s32 de_crc_set_polarity(struct de_crc_handle *hdl, u32 region, u32 polarity)
 {
 	struct de_crc_private *priv = hdl->private;
 	struct crc_reg *reg = get_crc_reg(priv);
