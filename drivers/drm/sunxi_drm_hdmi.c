@@ -793,11 +793,6 @@ static int _sunxi_drv_hdmi_read_edid(struct sunxi_drm_hdmi *hdmi)
 	}
 
 edid_parse:
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
-	sunxi_hdmi_edid_parse((u8 *)hdmi->hdmi_ctrl.drv_edid_data);
-#else
-	sunxi_hdmi_edid_parse((u8 *)drm_edid_raw(hdmi->hdmi_ctrl.drv_edid_data));
-#endif
 	ret = 0;
 
 exit:
@@ -2586,8 +2581,8 @@ exit_fill:
 	}
 
 exit:
-	hdmi_inf("drm hdmi check mode: %s >>>>>>>>>>>>>>>>\n",
-		crtc_state->mode_changed ? "change" : "unchange");
+	// hdmi_inf("drm hdmi check mode: %s >>>>>>>>>>>>>>>>\n",
+	// 	crtc_state->mode_changed ? "change" : "unchange");
 	return 0;
 }
 
@@ -2639,7 +2634,6 @@ static int _sunxi_drm_hdmi_get_modes(struct drm_connector *connector)
 	struct sunxi_drm_hdmi   *hdmi = drm_connector_to_hdmi(connector);
 	struct drm_display_mode *mode = NULL;
 	struct drm_display_info *info = &connector->display_info;
-	const struct edid *raw_edid;
 	int ret = 0, i = 0;
 
 	if (IS_ERR_OR_NULL(hdmi)) {
@@ -2663,21 +2657,7 @@ static int _sunxi_drm_hdmi_get_modes(struct drm_connector *connector)
 		goto use_default;
 	}
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
-	raw_edid = hdmi->hdmi_ctrl.drv_edid_data;
-	if (IS_ERR_OR_NULL(raw_edid)) {
-		shdmi_err(raw_edid); /*error*/
-		return -1;
-	}
-
-	drm_connector_update_edid_property(connector, raw_edid);
-#else
-	raw_edid = drm_edid_raw(hdmi->hdmi_ctrl.drv_edid_data);
 	drm_edid_connector_update(connector, hdmi->hdmi_ctrl.drv_edid_data);
-#endif
-
-	if (!IS_ERR_OR_NULL(hdmi->hdmi_cec.notify))
-		cec_notifier_set_phys_addr_from_edid(hdmi->hdmi_cec.notify, raw_edid);
 
 	if (hdmi->hdmi_ctrl.drv_dts_force_mode && !IS_ERR_OR_NULL(hdmi->hdmi_ctrl.drv_dts_mode)) {
 		mode = drm_mode_duplicate(connector->dev, hdmi->hdmi_ctrl.drv_dts_mode);
@@ -2752,7 +2732,7 @@ _sunxi_drm_hdmi_detect(struct drm_connector *connector, bool force)
 	}
 
 	ret = _sunxi_drv_hdmi_hpd_get(hdmi);
-	hdmi_inf("drm hdmi detect: %s\n", ret ? "connect" : "disconnect");
+	// hdmi_inf("drm hdmi detect: %s\n", ret ? "connect" : "disconnect");
 	return ret == 1 ? connector_status_connected : connector_status_disconnected;
 }
 

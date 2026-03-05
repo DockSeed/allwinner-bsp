@@ -11,11 +11,7 @@
  */
 
 #include <linux/version.h>
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(6, 1, 0)
-#include <drm/drm_gem_cma_helper.h>
-#else
 #include <drm/drm_gem_dma_helper.h>
-#endif
 
 #include <drm/drm_fourcc.h>
 #include <linux/slab.h>
@@ -70,31 +66,6 @@ typedef struct sunxidrm_debug_data {
 } sunxidrm_debug_data_t;
 
 static sunxidrm_debug_data_t dbgdat;
-
-static void  __maybe_unused sunxidrm_debug_record_exception(void)
-{
-	unsigned long flags;
-	int id = 0;
-
-	if (atomic_read(&dbgdat.exception)) {
-		pr_err("exception had already record !\n");
-		return;
-	}
-	atomic_inc(&dbgdat.exception);
-	pr_err("exception record !!!\n");
-
-	dbgdat.exception_ts = ktime_get();
-
-	for (id = 0; id < DE_MAX_COUNT; id++) {
-		frame_trace_t *frame = dbgdat.frames[id];
-		spin_lock_irqsave(&frame->lock, flags);
-		frame->exception_pos = frame->wpos;
-		spin_unlock_irqrestore(&frame->lock, flags);
-	}
-
-	// schedule dprintk task
-	schedule_work(&dbgdat.work);
-}
 
 static void sunxidrm_debug_work_func(struct work_struct *work)
 {
@@ -181,9 +152,6 @@ void sunxidrm_debug_init(struct platform_device *pdev)
 	// get iommu master id from dts
 	if (of_property_read_u32_index(pdev->dev.of_node, "iommus", 1, &master)) {
 		dev_err(&pdev->dev, "of_property_read_u32_index iommus failed\n");
-	} else {
-		dev_info(&pdev->dev, "register iommu fault callback for sunxi-drm, master=%d\n", master);
-		sunxi_iommu_register_fault_cb(sunxidrm_debug_record_exception, master);
 	}
 }
 #endif

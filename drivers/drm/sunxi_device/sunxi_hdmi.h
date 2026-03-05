@@ -287,13 +287,6 @@ int sunxi_hdmi_i2cm_set_ddc(u32 mode, u32 rate);
  * @num: send or receive message number
  */
 int sunxi_hdmi_i2cm_xfer(struct i2c_msg *msgs, int num);
-/**
- * @desc: sunxi hdmi edid parse
- * @buffer: point to edid buffer
- * @return: 0 - parse success
- *         -1 - parse failed
- */
-int sunxi_hdmi_edid_parse(u8 *buffer);
 
 /*******************************************************************************
  * sunxi hdmi core hdcp function

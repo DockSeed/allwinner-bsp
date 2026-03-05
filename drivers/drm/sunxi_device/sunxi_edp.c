@@ -24,40 +24,6 @@ static const char edid_header[] = {
 	0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00
 };
 
-
-/*
- * Search EDID for CEA extension block.
- */
-u8 *sunxi_drm_find_edid_extension(const struct edid *edid,
-				   int ext_id, int *ext_index)
-{
-	u8 *edid_ext = NULL;
-	int i;
-
-	/* No EDID or EDID extensions */
-	if (edid == NULL || edid->extensions == 0)
-		return NULL;
-
-	/* Find CEA extension */
-	for (i = *ext_index; i < edid->extensions; i++) {
-		edid_ext = (u8 *)edid + EDID_LENGTH * (i + 1);
-		if (edid_ext[0] == ext_id)
-			break;
-	}
-
-	if (i >= edid->extensions)
-		return NULL;
-
-	*ext_index = i + 1;
-
-	return edid_ext;
-}
-
-static s32 edid_block_cnt(struct edid *edid)
-{
-	return edid->extensions + 1;
-}
-
 int edp_get_edid_block(void *data, u8 *block_raw_data,
 			  unsigned int block_id, size_t len)
 {
@@ -78,24 +44,6 @@ int edp_get_edid_block(void *data, u8 *block_raw_data,
 	}
 
 	return ret;
-}
-
-s32 edp_edid_put(struct edid *edid)
-{
-	u32 block_cnt;
-
-	if (edid == NULL) {
-		EDP_WRN("EDID: edid is already null\n");
-		return 0;
-	}
-
-	block_cnt = edid_block_cnt(edid);
-
-	memset(edid, 0, block_cnt * EDID_LENGTH);
-
-	kfree(edid);
-
-	return 0;
 }
 
 s32 edp_edid_cea_db_offsets(const u8 *cea, s32 *start, s32 *end)
@@ -553,7 +501,7 @@ bool edp_set_use_inner_clk(struct sunxi_edp_hw_desc *edp_hw, u32 bypass)
 		return false;
 }
 
-s32 edp_hw_query_max_pixclk(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core,
+static s32 edp_hw_query_max_pixclk(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core,
 			      struct disp_video_timings *tmgs)
 {
 	u32 pixclk_max = 0;
@@ -578,7 +526,7 @@ s32 edp_hw_query_max_pixclk(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core
 	return RET_OK;
 }
 
-s32 edp_hw_query_current_pixclk(struct edp_tx_core *edp_core,
+static s32 edp_hw_query_current_pixclk(struct edp_tx_core *edp_core,
 				  struct disp_video_timings *tmgs)
 {
 	u32 pixclk_cur_max = 0;
@@ -610,7 +558,7 @@ s32 edp_hw_query_current_pixclk(struct edp_tx_core *edp_core,
 	return RET_OK;
 }
 
-s32 edp_hw_query_transfer_unit(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core,
+static s32 edp_hw_query_transfer_unit(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core,
 				 struct disp_video_timings *tmgs)
 {
 	struct sunxi_edp_hw_video_ops *ops = edp_hw->video_ops;
@@ -693,12 +641,12 @@ static void edp_phy_set_training_para(struct edp_tx_core *edp_core)
 		phy_configure(edp_core->dp_phy, &phy_opts);
 }
 
-s32 edp_get_link_status(struct sunxi_edp_hw_desc *edp_hw, char *link_status)
+static s32 edp_get_link_status(struct sunxi_edp_hw_desc *edp_hw, char *link_status)
 {
 	return edp_hw_aux_read(edp_hw, DPCD_0202H, LINK_STATUS_SIZE, link_status);
 }
 
-bool edp_sink_support_fast_training(struct sunxi_edp_hw_desc *edp_hw)
+static bool edp_sink_support_fast_training(struct sunxi_edp_hw_desc *edp_hw)
 {
 
 	char tmp_rx_buf[16];
@@ -714,7 +662,7 @@ bool edp_sink_support_fast_training(struct sunxi_edp_hw_desc *edp_hw)
 		return false;
 }
 
-bool edp_sink_support_tps3(struct sunxi_edp_hw_desc *edp_hw)
+static bool edp_sink_support_tps3(struct sunxi_edp_hw_desc *edp_hw)
 {
 	char tmp_rx_buf[16];
 
@@ -729,7 +677,7 @@ bool edp_sink_support_tps3(struct sunxi_edp_hw_desc *edp_hw)
 		return false;
 }
 
-s32 edp_hw_lane_remap(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, u32 remap_id)
+static s32 edp_hw_lane_remap(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, u32 remap_id)
 {
 	struct sunxi_edp_hw_video_ops *ops = edp_hw->video_ops;
 
@@ -742,7 +690,7 @@ s32 edp_hw_lane_remap(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, u32 remap_i
 		return RET_OK;
 }
 
-s32 edp_hw_lane_invert(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, bool invert)
+static s32 edp_hw_lane_invert(struct sunxi_edp_hw_desc *edp_hw, u32 lane_id, bool invert)
 {
 	struct sunxi_edp_hw_video_ops *ops = edp_hw->video_ops;
 
@@ -768,7 +716,7 @@ s32 edp_hw_set_pixel_mode(struct sunxi_edp_hw_desc *edp_hw, u32 pixel_mode)
 		return RET_OK;
 }
 
-void edp_hw_set_lane_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static void edp_hw_set_lane_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	struct sunxi_edp_hw_video_ops *ops = edp_hw->video_ops;
 	struct edp_lane_para *lane_para = &edp_core->lane_para;
@@ -794,7 +742,7 @@ void edp_hw_set_lane_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *
 		edp_hw_lane_invert(edp_hw, i, lane_para->lane_invert[i]);
 }
 
-void edp_lane_training_para_reset(struct edp_lane_para *lane_para)
+static void edp_lane_training_para_reset(struct edp_lane_para *lane_para)
 {
 	lane_para->lane_sw[0] = 0;
 	lane_para->lane_sw[1] = 0;
@@ -806,7 +754,7 @@ void edp_lane_training_para_reset(struct edp_lane_para *lane_para)
 	lane_para->lane_pre[3] = 0;
 }
 
-void edp_hw_set_training_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static void edp_hw_set_training_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	struct sunxi_edp_hw_video_ops *ops = edp_hw->video_ops;
 	u32 sw[4];
@@ -839,9 +787,7 @@ void edp_hw_set_training_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_co
 	}
 }
 
-
-
-s32 edp_dpcd_set_lane_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static s32 edp_dpcd_set_lane_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	char tmp_tx_buf[16];
 	char tmp_rx_buf[16];
@@ -862,7 +808,7 @@ s32 edp_dpcd_set_lane_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core 
 	return ret;
 }
 
-s32 edp_dpcd_set_training_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static s32 edp_dpcd_set_training_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	char tmp_tx_buf[16];
 	u32 sw[4];
@@ -894,7 +840,7 @@ s32 edp_dpcd_set_training_para(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_c
 	return RET_OK;
 }
 
-s32 edp_dpcd_set_training_pattern(struct sunxi_edp_hw_desc *edp_hw, u8 pattern)
+static s32 edp_dpcd_set_training_pattern(struct sunxi_edp_hw_desc *edp_hw, u8 pattern)
 {
 	char tmp_tx_buf[16];
 
@@ -910,7 +856,7 @@ s32 edp_dpcd_set_training_pattern(struct sunxi_edp_hw_desc *edp_hw, u8 pattern)
 	return RET_OK;
 }
 
-s32 edp_training_pattern_clear(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static s32 edp_training_pattern_clear(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	s32 ret = RET_OK;
 	u32 lane_count = edp_core->lane_para.lane_cnt;
@@ -927,7 +873,7 @@ s32 edp_training_pattern_clear(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_c
 	return ret;
 }
 
-bool edp_cr_training_done(char *link_status, u32 lane_count, u32 *fail_lane)
+static bool edp_cr_training_done(char *link_status, u32 lane_count, u32 *fail_lane)
 {
 	u32 i = 0;
 	u8 lane_status = 0;
@@ -956,7 +902,7 @@ bool edp_cr_training_done(char *link_status, u32 lane_count, u32 *fail_lane)
 	}
 }
 
-bool edp_eq_training_done(char *link_status, u32 lane_count, u32 *fail_lane)
+static bool edp_eq_training_done(char *link_status, u32 lane_count, u32 *fail_lane)
 {
 	u32 i = 0;
 	u8 lane_status = 0;
@@ -997,7 +943,7 @@ bool edp_eq_training_done(char *link_status, u32 lane_count, u32 *fail_lane)
 }
 
 
-bool edp_swing_level_reach_max(struct edp_tx_core *edp_core)
+static bool edp_swing_level_reach_max(struct edp_tx_core *edp_core)
 {
 	u32 lane_count = edp_core->lane_para.lane_cnt;
 	u32 sw[4];
@@ -1016,7 +962,7 @@ bool edp_swing_level_reach_max(struct edp_tx_core *edp_core)
 	return false;
 }
 
-u32 edp_adjust_train_para(char *link_status, struct edp_tx_core *edp_core)
+static u32 edp_adjust_train_para(char *link_status, struct edp_tx_core *edp_core)
 {
 	u32 old_sw[4];
 	u32 old_pre[4];
@@ -1072,7 +1018,7 @@ u32 edp_adjust_train_para(char *link_status, struct edp_tx_core *edp_core)
 	return change;
 }
 
-s32 edp_link_cr_training(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static s32 edp_link_cr_training(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	char link_status[16];
 	char training_info[16];
@@ -1148,7 +1094,7 @@ s32 edp_link_cr_training(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *e
 	return RET_FAIL;
 }
 
-s32 edp_link_eq_training(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static s32 edp_link_eq_training(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	char link_status[16];
 	char training_info[16];
@@ -1215,7 +1161,7 @@ s32 edp_link_eq_training(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *e
 	return RET_FAIL;
 }
 
-s32 edp_fast_link_train(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static s32 edp_fast_link_train(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	char link_status[LINK_STATUS_SIZE];
 	u32 lane_count = edp_core->lane_para.lane_cnt;
@@ -1268,7 +1214,7 @@ s32 edp_fast_link_train(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *ed
 	return RET_OK;
 }
 
-s32 edp_full_link_train(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static s32 edp_full_link_train(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	s32 ret = RET_OK;
 
@@ -1298,7 +1244,7 @@ s32 edp_full_link_train(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *ed
 }
 
 
-s32 edp_link_training(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
+static s32 edp_link_training(struct sunxi_edp_hw_desc *edp_hw, struct edp_tx_core *edp_core)
 {
 	if (edp_source_support_fast_training(edp_hw) \
 		&& edp_sink_support_fast_training(edp_hw))

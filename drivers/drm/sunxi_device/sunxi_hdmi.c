@@ -198,46 +198,6 @@ int sunxi_hdmi_i2cm_xfer(struct i2c_msg *msgs, int num)
 	return dw_i2cm_xfer(msgs, num);
 }
 
-int sunxi_hdmi_edid_parse(u8 *buffer)
-{
-	u8 temp_edid[EDID_BLOCK_SIZE] = {0x0};
-	int edid_ext_cnt = 0, i = 0, ret = 0;
-
-	if (IS_ERR_OR_NULL(buffer)) {
-		shdmi_err(buffer);
-		return -1;
-	}
-
-	memcpy(temp_edid, buffer, EDID_BLOCK_SIZE);
-
-	dw_edid_reset_sink();
-
-	ret = dw_edid_parse_info((u8 *)temp_edid);
-	if (ret != 0) {
-		hdmi_err("hdmi edid parse block0 failed\n");
-		return -1;
-	}
-	hdmi_inf("sunxi hdmi edid parse block0 finish\n");
-	edid_ext_cnt = temp_edid[126];
-
-	if (edid_ext_cnt == 0x0) {
-		hdmi_inf("hdmi edid only has block0 and parse finish\n");
-		return 0;
-	}
-
-	for (i = 0; i < edid_ext_cnt; i++) {
-		memcpy(temp_edid, buffer + (EDID_BLOCK_SIZE * (i + 1)), EDID_BLOCK_SIZE);
-		ret = dw_edid_parse_info((u8 *)temp_edid);
-		if (ret != 0) {
-			hdmi_err("hdmi edid parse block%d failed\n", i + 1);
-			continue;
-		}
-		hdmi_inf("sunxi hdmi edid parse block%d finish\n", i + 1);
-	}
-
-	return 0;
-}
-
 /*******************************************************************************
  * sunxi hdmi core hdcp function
  ******************************************************************************/
@@ -585,10 +545,11 @@ int sunxi_hdmi_disp_select_format(struct disp_device_config *info, u32 vic_code)
 	case DISP_CSC_TYPE_YUV420:
 		if (dw_sink_support_yuv420(vic_code)) {
 			if (info->bits == DISP_DATA_8BITS ||
-					dw_sink_support_yuv420_dc((u8)info->bits))
+					dw_sink_support_yuv420_dc((u8)info->bits)) {
 				hdmi_trace("hdmi check continue use yuv420-%s\n",
 					sunxi_hdmi_color_depth_string(info->bits));
 				return 0;
+			}
 		}
 		break;
 	case DISP_CSC_TYPE_YUV422:

@@ -16,11 +16,12 @@
 #include <linux/dev_printk.h>
 #include <linux/types.h>
 #include <drm/drm_edid.h>
-#include <drm/drm_displayid.h>
 #include <linux/phy/phy.h>
 #include <linux/phy/phy-dp.h>
 #include <linux/wait.h>
 #include <sound/hdmi-codec.h>
+#include <../drivers/gpu/drm/drm_displayid_internal.h>
+
 #include "include.h"
 
 extern u32 loglevel_debug;
@@ -448,8 +449,6 @@ struct edp_tx_core {
 
 	struct disp_video_timings timings;
 
-	struct edid *edid;
-
 	struct phy *dp_phy;
 	struct phy *aux_phy;
 	struct phy *combo_phy;
@@ -695,10 +694,7 @@ struct sunxi_dp_hdcp {
 
 int edp_get_edid_block(void *data, u8 *edid,
 			  unsigned int block, size_t len);
-s32 edp_edid_put(struct edid *edid);
 s32 edp_edid_cea_db_offsets(const u8 *cea, s32 *start, s32 *end);
-u8 *sunxi_drm_find_edid_extension(const struct edid *edid,
-				   int ext_id, int *ext_index);
 
 
 u64 edp_source_get_max_rate(struct sunxi_edp_hw_desc *edp_hw);

@@ -12,11 +12,7 @@ sunxidrm-y += sunxi_drm_debug.o
 # sunxidrm-y += kernel_panic_printf.o
 
 #fbdev
-# ifdef CONFIG_FB
-# sunxidrm-y += sunxi_fbdev_core.o
-# else
 sunxidrm-y += sunxi_drmfb_core.o
-# endif
 sunxidrm-y += sunxi_fbdev_platform.o
 
 # de
