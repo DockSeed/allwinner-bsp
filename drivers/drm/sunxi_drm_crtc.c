@@ -1566,11 +1566,6 @@ struct sunxi_drm_wb *sunxi_drm_wb_init_one(struct sunxi_de_wb_info *wb_info)
 		return wb;
 }
 
-void sunxi_drm_wb_destory(struct sunxi_drm_wb *wb)
-{
-//TODO
-}
-
 static void sunxi_crtc_finish_page_flip(struct drm_device *dev,
 					struct sunxi_drm_crtc *scrtc)
 {

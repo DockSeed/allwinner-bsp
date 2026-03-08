@@ -193,7 +193,7 @@ out:
  * and the function should eventually be removed and replaced with
  * drm_atomic_helper_disable_all in the future.
  */
-int sunxi_drm_atomic_helper_disable_all(struct drm_device *dev,
+static int sunxi_drm_atomic_helper_disable_all(struct drm_device *dev,
 				  struct drm_modeset_acquire_ctx *ctx)
 {
 	struct drm_atomic_state *state;

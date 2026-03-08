@@ -369,14 +369,6 @@ int sunxi_smc_copy_arisc_paras(phys_addr_t dest, phys_addr_t src, u32 len)
 	return res.a0;
 }
 
-phys_addr_t sunxi_smc_get_teeaddr_paras(phys_addr_t resumeaddr)
-{
-	struct arm_smccc_res res;
-
-	arm_smccc_smc(ARM_SVC_GET_TEEADDR_PARAS,
-		resumeaddr, 0, 0, 0, 0, 0, 0, &res);
-	return res.a0;
-}
 /* optee smc */
 #define ARM_SMCCC_SMC_32		0
 #define ARM_SMCCC_SMC_64		1

@@ -213,12 +213,7 @@ static void sunxi_drm_mode_config_init(struct drm_device *dev)
 	dev->mode_config.helper_private = &sunxi_mode_config_helpers;
 }
 
-void sunxi_drm_unload(struct drm_device *dev)
-{
-	drm_mode_config_cleanup(dev);
-}
-
-struct drm_connector *drm_get_disp_connector(struct drm_device *dev, int index)
+static struct drm_connector *drm_get_disp_connector(struct drm_device *dev, int index)
 {
 	struct drm_connector_list_iter iter;
 	struct drm_connector *connector;

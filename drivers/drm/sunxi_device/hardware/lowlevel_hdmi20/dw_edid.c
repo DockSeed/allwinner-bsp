@@ -172,7 +172,7 @@ static int _parse_hdmi_forum_info(dw_edid_hdmi_forum_vs_data_t *hf, u8 *data)
  * @param data a pointer to the 18-byte structure to be parsed.
  * @return true if success
  */
-int _parse_data_block_detailed_timing(dw_dtd_t *dtd, u8 data[18])
+static int _parse_data_block_detailed_timing(dw_dtd_t *dtd, u8 data[18])
 {
 	if (IS_ERR_OR_NULL(dtd)) {
 		shdmi_err(dtd);
