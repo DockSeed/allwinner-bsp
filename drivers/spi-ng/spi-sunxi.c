@@ -242,7 +242,7 @@ static void sunxi_spi_ss_owner(struct sunxi_spi *sspi, u32 owner)
 	writel(reg_val, sspi->base_addr + SUNXI_SPI_TC_REG);
 }
 
-static int sunxi_spi_ss_select(struct sunxi_spi *sspi, u16 cs)
+static int sunxi_spi_ss_select(struct sunxi_spi *sspi, u8 cs)
 {
 	u32 reg_old, reg_new;
 	int ret = 0;
@@ -596,7 +596,7 @@ static void sunxi_spi_set_wait_cnt(struct sunxi_spi *sspi, u32 wait_cnt)
 
 /* SPI Controller Hardware Register Operation End */
 
-u32 sunxi_spi_word_delay_wcc(struct spi_transfer *t, u32 effective_speed_hz)
+static u32 sunxi_spi_word_delay_wcc(struct spi_transfer *t, u32 effective_speed_hz)
 {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0))
 	u32 value = t->word_delay.value;
@@ -937,7 +937,7 @@ static int sunxi_spi_bus_setup(struct spi_device *spi, struct spi_transfer *t)
 			break;
 		}
 
-		if (!spi_controller_is_slave(sspi->ctlr)) {
+		if (!spi_controller_is_target(sspi->ctlr)) {
 			spi_speed_hz = sunxi_spi_set_clk(sspi, spi_speed_hz);
 			if (spi_speed_hz > 0)
 				sspi->pre_speed_hz = spi_speed_hz;
@@ -996,7 +996,7 @@ static int sunxi_spi_setup(struct spi_device *spi)
 static void sunxi_spi_set_cs(struct spi_device *spi, bool status)
 {
 	struct sunxi_spi *sspi = spi_controller_get_devdata(spi->controller);
-	u16 cs = spi_controller_is_slave(spi->controller) ? sspi->slave_cs : spi->chip_select;
+	u8 cs = spi_controller_is_target(spi->controller) ? sspi->slave_cs : spi->chip_select[0];
 	int ret;
 
 	ret = sunxi_spi_ss_select(sspi, cs);
@@ -1005,11 +1005,7 @@ static void sunxi_spi_set_cs(struct spi_device *spi, bool status)
 		return ;
 	}
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0))
-	if (spi->cs_gpiod)
-#else
-	if (spi->cs_gpiod || gpio_is_valid(spi->cs_gpio))
-#endif
+	if (spi->cs_gpiod[0])
 		return ;
 
 	sunxi_spi_ss_polarity(sspi, !(spi->mode & SPI_CS_HIGH));
@@ -1022,7 +1018,7 @@ static int sunxi_spi_prepare_message(struct spi_controller *ctlr, struct spi_mes
 {
 	struct sunxi_spi *sspi = spi_controller_get_devdata(ctlr);
 
-	if (spi_controller_is_slave(ctlr)) {
+	if (spi_controller_is_target(ctlr)) {
 		/* Some invisible data in fifo may not clear under slave mode, clean it by reset controller */
 		sunxi_spi_reset_fifo(sspi);
 		sunxi_spi_soft_reset(sspi);
@@ -1058,7 +1054,7 @@ static int sunxi_spi_unprepare_message(struct spi_controller *ctlr, struct spi_m
 {
 	struct sunxi_spi *sspi = spi_controller_get_devdata(ctlr);
 
-	if (spi_controller_is_slave(ctlr)) {
+	if (spi_controller_is_target(ctlr)) {
 		sunxi_spi_disable_bus(sspi);
 		if (sspi->ready_gpio > 0) {
 			/* delay some times to make sure gpio irq can detect the reverse */
@@ -1230,7 +1226,7 @@ static int sunxi_spi_mode_check(struct sunxi_spi *sspi, struct spi_transfer *t)
 		ret = sunxi_dbi_mode_check_dbi(sspi, t);
 		break;
 	default:
-		if (spi_controller_is_slave(sspi->ctlr))
+		if (spi_controller_is_target(sspi->ctlr))
 			ret = sunxi_spi_mode_check_slave(sspi, t);
 		else
 			ret = sunxi_spi_mode_check_master(sspi, t);
@@ -1411,7 +1407,7 @@ static int sunxi_spi_config_dma_rx(struct sunxi_spi *sspi, struct spi_transfer *
 	 * There is an issue in controller that RX_RDY trigger is not controllable before sun8iw21
 	 * If is in slave mode, we use the DMA RX configuration by fixed value
 	 */
-	if (spi_controller_is_slave(sspi->ctlr) && (sspi->data->quirk_flag & DMA_FORCE_FIXED)) {
+	if (spi_controller_is_target(sspi->ctlr) && (sspi->data->quirk_flag & DMA_FORCE_FIXED)) {
 		dma_conf.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
 		dma_conf.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
 		dma_conf.src_maxburst = 1;
@@ -1831,7 +1827,7 @@ static int sunxi_spi_transfer_one(struct spi_controller *ctlr, struct spi_device
 		ret = sunxi_spi_xfer_bit(spi, t);
 		break;
 	default:
-		if (spi_controller_is_slave(ctlr))
+		if (spi_controller_is_target(ctlr))
 			ret = sunxi_spi_xfer_slave(spi, t);
 		else {
 			ret = sunxi_spi_xfer_master(spi, t);
@@ -2682,13 +2678,13 @@ static int sunxi_spi_probe(struct platform_device *pdev)
 	case SUNXI_SPI_BUS_SLAVE:
 	case SUNXI_SPI_BUS_CAMERA:
 		sspi->camera_framehead = devm_kzalloc(sspi->dev, SUNXI_SPI_FRAMEHEAD_MAX, GFP_KERNEL);
-		sspi->ctlr = devm_spi_alloc_slave(sspi->dev, 0);
+		sspi->ctlr = devm_spi_alloc_target(sspi->dev, 0);
 		break;
 	case SUNXI_SPI_BUS_DBI:
 		sspi->dbi_config = devm_kzalloc(sspi->dev, sizeof(*sspi->dbi_config), GFP_KERNEL);
 	fallthrough;
 	default:
-		sspi->ctlr = devm_spi_alloc_master(sspi->dev, 0);
+		sspi->ctlr = devm_spi_alloc_host(sspi->dev, 0);
 	}
 	if (IS_ERR_OR_NULL(sspi->ctlr)) {
 		sunxi_err(sspi->dev, "failed alloc spi controller\n");
@@ -2761,7 +2757,7 @@ static int sunxi_spi_probe(struct platform_device *pdev)
 	switch (sspi->bus_mode) {
 	case SUNXI_SPI_BUS_SLAVE:
 	case SUNXI_SPI_BUS_CAMERA:
-		sspi->ctlr->slave_abort = sunxi_spi_slave_abort;
+		sspi->ctlr->target_abort = sunxi_spi_slave_abort;
 		break;
 	case SUNXI_SPI_BUS_NAND:
 #if IS_ENABLED(CONFIG_AW_MTD_SPINAND)
@@ -2789,9 +2785,8 @@ static int sunxi_spi_probe(struct platform_device *pdev)
 	}
 
 	if (sspi->ready_gpio > 0) {
-		if (spi_controller_is_slave(sspi->ctlr)) {
-			devm_gpio_request(sspi->dev, sspi->ready_gpio, sspi->ready_label);
-			gpio_direction_output(sspi->ready_gpio, 0);
+		if (spi_controller_is_target(sspi->ctlr)) {
+			devm_gpio_request_one(sspi->dev, sspi->ready_gpio, GPIOF_OUT_INIT_LOW, sspi->ready_label);
 		} else {
 			sspi->ctlr->mode_bits |= SPI_READY;
 			sspi->ready_status = 0;
@@ -2836,7 +2831,7 @@ err0:
 	return ret;
 }
 
-static int sunxi_spi_remove(struct platform_device *pdev)
+static void sunxi_spi_remove(struct platform_device *pdev)
 {
 	struct sunxi_spi *sspi = spi_controller_get_devdata(platform_get_drvdata(pdev));
 
@@ -2846,8 +2841,6 @@ static int sunxi_spi_remove(struct platform_device *pdev)
 #endif
 	sunxi_spi_hw_exit(sspi);
 	sunxi_spi_release_dma(sspi);
-
-	return 0;
 }
 
 static int __maybe_unused sunxi_spi_suspend(struct device *dev)

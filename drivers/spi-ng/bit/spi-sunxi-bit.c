@@ -101,7 +101,7 @@ void sunxi_spi_bit_ss_owner(struct sunxi_spi *sspi, u32 owner)
 	writel(reg_val, sspi->base_addr + SUNXI_SPI_BATC_REG);
 }
 
-void sunxi_spi_bit_ss_polarity(struct sunxi_spi *sspi, bool pol)
+static void sunxi_spi_bit_ss_polarity(struct sunxi_spi *sspi, bool pol)
 {
 	u32 reg_old, reg_new;
 
@@ -141,17 +141,13 @@ void sunxi_spi_bit_set_cs(struct spi_device *spi, bool status)
 	struct sunxi_spi *sspi = spi_controller_get_devdata(spi->controller);
 	int ret;
 
-	ret = sunxi_spi_bit_ss_select(sspi, spi->chip_select);
+	ret = sunxi_spi_bit_ss_select(sspi, spi->chip_select[0]);
 	if (ret < 0) {
-		sunxi_warn(sspi->dev, "bit cs %d over range, need control by software\n", spi->chip_select);
+		sunxi_warn(sspi->dev, "bit cs %d over range, need control by software\n", spi->chip_select[0]);
 		return ;
 	}
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0))
-	if (spi->cs_gpiod)
-#else
-	if (spi->cs_gpiod || gpio_is_valid(spi->cs_gpio))
-#endif
+	if (spi->cs_gpiod[0])
 		return ;
 
 	sunxi_spi_bit_ss_polarity(sspi, !(spi->mode & SPI_CS_HIGH));
