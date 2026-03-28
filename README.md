@@ -7,15 +7,36 @@ Please download the official Linux 6.18.y code from tar or git to a parallel fol
 ```sh
 git clone https://github.com/alexcaoys/allwinner-bsp.git -b linux-6.18.y --single-branch allwinner-bsp
 cd linux-6.18.y
-ln -s ../allwinner-bsp/ ./bsp/
+ln -s ../allwinner-bsp/ ./bsp
 git apply ./bsp/patches/*.patch
 cp ./bsp/configs/linux-6.18/*.dts* arch/arm64/boot/dts/allwinner/
 cp ./bsp/configs/linux-6.18/defconfig .config
 
-# This is for native ARM64 compile, if you need CROSS_COMPILE, please also refer to other online resources.
 export BSP_TOP=$PWD/bsp/
+```
+This is for native ARM64 compile:
+```sh
 make menuconfig
+# to build ARM64 Image
 make
+# Or to build deb packages
+make bindeb-pkg
+```
+
+CROSS_COMPILE (on Ubuntu):
+```sh
+sudo apt install build-essential gcc-aarch64-linux-gnu
+
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- menuconfig
+# to build ARM64 Image
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
+
+# Or to build deb packages, you might need some additional packages
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- bindeb-pkg
+# Check if it asks for more packages, you might need the following to install arm64 packages
+sudo dpkg --add-architecture arm64
+# You might need to add http://ports.ubuntu.com/ubuntu-ports to /etc/apt/sources.list.d/ubuntu.sources here
+sudo apt update
 ```
 
 ## Feature Matrix
