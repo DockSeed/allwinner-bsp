@@ -52,7 +52,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |       |Thermal|ths            |BSP    |               |
 |Audio  |sound  |sunxi-snd\*    |BSP    |Untested       |
 |Camera |vin    |sunxi-vin\*    |UNK    |[1]            |
-|Clocks |CCUs   |*ccu           |BSP    |MAIN WIP[6]    |
+|Clocks |CCUs   |*ccu           |BSP    |MAIN WIP[7]    |
 |CPUFreq|       |               |PATCH  |               |
 |CPUIdle|       |               |UNK    |No drivers     |
 |Crypto |       |sunxi-ce       |OFF    |               |
@@ -77,11 +77,11 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |NPU    |       |npu            |BSP    |[3]            |
 |NSI    |       |sunxi-nsi      |BSP    |What's this?   |
 |PCIE   |       |pcie           |BSP    |Untested       |
-|Pinctrl|       |\*-pinctrl     |BSP    |MAIN WIP[7]    |
+|Pinctrl|       |\*-pinctrl     |BSP    |MAIN WIP[8]    |
 |PMU    |A55&A76|\*-pmu         |**MAIN**|              |
-|       |PCK600 |pck600         |**MAIN**|7.1[10]       |
+|       |PCK600 |pck600         |**MAIN**|7.1[11]       |
 |PWM    |       |sunxi-pwm\*    |BSP    |               |
-|RTC    |       |rtc\*          |BSP    |MAIN WIP[8]    |
+|RTC    |       |rtc\*          |BSP    |MAIN WIP[9]    |
 |SERDES |       |cadence-\*     |BSP    |USB DP PCIE PHY|
 |SID    |EFUSE  |sunxi-sid      |BSP    |Untested       |
 |SPI    |       |sunxi-spi\*    |BSP    |Untested       |
@@ -94,10 +94,11 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |       |USB 3.0|dwc3           |BSP    |[5]            |
 |VE     |       |sunxi-cedar-ve |BSP    |Untested       |
 |Watchdog|      |wdt-v103       |BSP    |Untested       |
-|**A7z Specific**||             |       |               |
+|WIFI/BT|       |aic8800        |BSP    |Radxa PKG[6]   |
+|**A7Z Specific**||             |       |               |
 |USB-C  |PHY Switcher|phy_switcher|BSP  |               |
-|       |Controller|et7304      |**MAIN**|7.1[11]       |
-|AXP PMU|       |axp8191        |BSP    |MAIN WIP[9]    |
+|       |Controller|et7304      |**MAIN**|7.1[12]       |
+|AXP PMU|       |axp8191        |BSP    |MAIN WIP[10]   |
 
 **Status**: 
 - BSP: BSP drivers ported for 6.18.y
@@ -107,18 +108,31 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 - UNK: Unknown, disabled now, but enabled on Radxa config/dt
 
 [1] Didn't port VIN Drivers since I don't have any camera to test. \
-[2] Mainline Driver for BXM works, Mesa works but nothing display, maybe DE needs more works. \
+[2] Mainline Driver for BXM works, Mesa works but nothing display. \
 [3] Mainline vivante,gc can be detected but crashes. Need investigation. \
 [4] Mainline allwinner,sun55i-a523-mmc exists, might need more work. \
-[5] Mainline dwc exists, please check linux-sunxi website.
+[5] Mainline dwc exists, please check linux-sunxi website. \
+[6] Drivers incldued here is from Radxa repo. See below. \
 
-[6] https://lore.kernel.org/linux-sunxi/20260121-a733-rtc-v1-0-d359437f23a7@pigmoral.tech/ \
-[6] https://lore.kernel.org/linux-sunxi/20260310-a733-clk-v1-0-36b4e9b24457@pigmoral.tech/ \
-[7] https://lore.kernel.org/linux-sunxi/20250821004232.8134-1-andre.przywara@arm.com/ \
-[8] https://lore.kernel.org/linux-sunxi/20260121-a733-rtc-v1-0-d359437f23a7@pigmoral.tech/ \
-[9] https://lore.kernel.org/linux-sunxi/20250813235330.24263-1-andre.przywara@arm.com/
+[7] https://lore.kernel.org/linux-sunxi/20260121-a733-rtc-v1-0-d359437f23a7@pigmoral.tech/ \
+[7] https://lore.kernel.org/linux-sunxi/20260310-a733-clk-v1-0-36b4e9b24457@pigmoral.tech/ \
+[8] https://lore.kernel.org/linux-sunxi/20250821004232.8134-1-andre.przywara@arm.com/ \
+[9] https://lore.kernel.org/linux-sunxi/20260121-a733-rtc-v1-0-d359437f23a7@pigmoral.tech/ \
+[10] https://lore.kernel.org/linux-sunxi/20250813235330.24263-1-andre.przywara@arm.com/
 
-[10] https://lore.kernel.org/linux-sunxi/20260305-b4-pck600-a733-v2-0-ba6bbed7d253@gmail.com/ \
-[11] https://lore.kernel.org/linux-usb/20260220-et7304-v3-0-ede2d9634957@gmail.com/ \
-[11] https://lore.kernel.org/linux-usb/20260318-husb311-v4-0-69e029255430@flipper.net/
+[11] https://lore.kernel.org/linux-sunxi/20260305-b4-pck600-a733-v2-0-ba6bbed7d253@gmail.com/ \
+[12] https://lore.kernel.org/linux-usb/20260220-et7304-v3-0-ede2d9634957@gmail.com/ \
+[12] https://lore.kernel.org/linux-usb/20260318-husb311-v4-0-69e029255430@flipper.net/
 
+## Driver Specific
+
+### GPU: IMG PowerVR BXM
+It looks like the Imagination driver on Linux 6.18 is working fine on A733. \
+After putting the firmware [here](https://gitlab.freedesktop.org/imagination/linux-firmware/-/tree/powervr/powervr) to the correct place, it will load the driver. \
+After building the Mesa driver using the main branch (on Mar. 29, 2026), `vulkaninfo` can see the GPU but nothing show up on screen (tested with Wayland `sway` using GLES/Vulkan) \
+**Maybe DE needs more works.**
+
+### WIFI\BT: FCU760K/AIC8800
+Radxa maintains a separate [repo](https://github.com/radxa-pkg/aic8800) for drivers for AIC8800. The release there should work well with Debian-based distros. \
+Since this is on top of USB, it is not on device tree. Drivers included here is stripped from Radxa repo (I think it's [this release](https://github.com/radxa-pkg/aic8800/releases/tag/4.0%2Bgit20250410.b99ca8b6-5)) \
+Firmware is also needed. Please put the firmware [here](https://github.com/radxa-pkg/aic8800/tree/main/src/USB/driver_fw/fw) in the correct place. (`dmesg` will also warn you if driver didn't find them)
