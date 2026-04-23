@@ -66,7 +66,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |       |TCON   |tcon-\*        |BSP    |               |
 |DMA    |       |dma-v106       |BSP    |               |
 |ETH    |GMAC   |gmac\*         |OFF    |               |
-|GPU    |PowerVR|img-bxm-4-64   |**MAIN**|[2]           |
+|GPU    |PowerVR|img-bxm-4-64   |PATCH  |[2]            |
 |HW Spinlocks|  |hwspinlock     |OFF    |               |
 |I2C    |       |sun55i-a523-i2c|**MAIN**|Same as A523  |
 |IOMMU  |       |iommu-v20      |BSP    |               |
@@ -74,7 +74,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |       |IR TX  |irtx           |OFF    |               |
 |LEDC   |       |sunxi-leds     |BSP    |               |
 |MsgBox |       |msgbox         |OFF    |               |
-|NPU    |       |npu            |BSP    |[3]            |
+|NPU    |       |npu            |PATCH  |Untested[3]    |
 |NSI    |       |sunxi-nsi      |BSP    |What's this?   |
 |PCIE   |       |pcie           |BSP    |Untested       |
 |Pinctrl|       |\*-pinctrl     |BSP    |MAIN WIP[8]    |
@@ -108,11 +108,11 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 - UNK: Unknown, disabled now, but enabled on Radxa config/dt
 
 [1] Didn't port VIN Drivers since I don't have any camera to test. \
-[2] Mainline Driver for BXM works, Mesa works but nothing display. \
-[3] Mainline vivante,gc can be detected but crashes. Need investigation. \
+[2] Mainline Driver for BXM works, but patch for pck600 is needed (disable power_off). \
+[3] Mainline vivante,gc can be detected, but need extra clocks & resets. \
 [4] Mainline allwinner,sun55i-a523-mmc exists, might need more work. \
 [5] Mainline dwc exists, please check linux-sunxi website. \
-[6] Drivers incldued here is from Radxa repo. See below. \
+[6] Drivers incldued here is from Radxa repo. See below.
 
 [7] https://lore.kernel.org/linux-sunxi/20260121-a733-rtc-v1-0-d359437f23a7@pigmoral.tech/ \
 [7] https://lore.kernel.org/linux-sunxi/20260310-a733-clk-v1-0-36b4e9b24457@pigmoral.tech/ \
@@ -129,8 +129,8 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 ### GPU: IMG PowerVR BXM
 It looks like the Imagination driver on Linux 6.18 is working fine on A733. \
 After putting the firmware [here](https://gitlab.freedesktop.org/imagination/linux-firmware/-/tree/powervr/powervr) to the correct place, it will load the driver. \
-After building the Mesa driver using the main branch (on Mar. 29, 2026), `vulkaninfo` can see the GPU but nothing show up on screen (tested with Wayland `sway` using GLES/Vulkan) \
-**Maybe DE needs more works.**
+After building the Mesa driver using the Mesa main branch, `vulkaninfo` can see the GPU, Wayland `sway` using GLES works, `vkmark` runs on screen.
+Thanks icenowy & iuncuim for the help on debugging.
 
 ### WIFI\BT: FCU760K/AIC8800
 Radxa maintains a separate [repo](https://github.com/radxa-pkg/aic8800) for drivers for AIC8800. The release there should work well with Debian-based distros. \

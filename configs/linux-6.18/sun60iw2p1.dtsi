@@ -1444,10 +1444,10 @@
 				power-domains = <&pck600 PD_PCIE>;
 			};
 
-			gpu{
-				id = <6>;
-				power-domains = <&pck600 PD_GPU_TOP>;
-			};
+			// gpu{
+			// 	id = <6>;
+			// 	power-domains = <&pck600 PD_GPU_TOP>;
+			// };
 
 			iommu0{
 				id = <14>;
@@ -2222,35 +2222,39 @@
 			status = "disabled";
 		};
 
-		// npu: npu@3600000 {
-		// 	compatible = "vivante,gc";
-		// 	reg = <0x0 0x03600000 0x0 0x1000>;
-		// 	interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
-		// 	clocks = <&ccu CLK_MBUS_NPU_GATE>,
-		// 		 <&ccu CLK_NPU>,
-		// 		 <&ccu CLK_NPU_AHB_GATE>;
-		// 	clock-names = "bus", "core", "reg";
-		// 	resets = <&ccu RST_BUS_NPU_CORE>;
-		// 	power-domains = <&pck600 PD_NPU>;
-		// 	status = "disabled";
-		// };
-
 		npu: npu@3600000 {
-			compatible = "allwinner,npu";
+			compatible = "vivante,gc";
 			reg = <0x0 0x03600000 0x0 0x1000>;
-			device_type = "npu";
-			dev_name = "npu";
 			interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "npu";
-			clocks = <&ccu CLK_NPU>, <&ccu CLK_PLL_NPU>, <&ccu CLK_BUS_NPU>, <&ccu CLK_MBUS_NPU_GATE>, <&ccu CLK_NPU_AHB_GATE>;
-			clock-names = "clk_npu", "clk_parent", "clk_bus", "clk_mbus_gate", "clk_ahb_gate";
-			operating-points-v2 = <&npu_opp_table>;
-			resets = <&ccu RST_BUS_NPU_CORE>, <&ccu RST_BUS_NPU_AXI>, <&ccu RST_BUS_NPU_AHB>;
-			reset-names = "npu_rst", "npu_axi_rst", "npu_ahb_rst";
+			clocks = <&ccu CLK_BUS_NPU>,
+				<&ccu CLK_NPU>,
+				<&ccu CLK_MBUS_NPU_GATE>,
+				<&ccu CLK_NPU_AHB_GATE>;
+			clock-names = "bus", "core", "mbus", "reg";
+			resets = <&ccu RST_BUS_NPU_CORE>,
+				<&ccu RST_BUS_NPU_AXI>,
+				<&ccu RST_BUS_NPU_AHB>;
+			reset-names = "core", "axi", "ahb";
 			power-domains = <&pck600 PD_NPU>;
-			npu-vf = <1008>;
 			status = "disabled";
 		};
+
+		// npu: npu@3600000 {
+		// 	compatible = "allwinner,npu";
+		// 	reg = <0x0 0x03600000 0x0 0x1000>;
+		// 	device_type = "npu";
+		// 	dev_name = "npu";
+		// 	interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
+		// 	interrupt-names = "npu";
+		// 	clocks = <&ccu CLK_NPU>, <&ccu CLK_PLL_NPU>, <&ccu CLK_BUS_NPU>, <&ccu CLK_MBUS_NPU_GATE>, <&ccu CLK_NPU_AHB_GATE>;
+		// 	clock-names = "clk_npu", "clk_parent", "clk_bus", "clk_mbus_gate", "clk_ahb_gate";
+		// 	operating-points-v2 = <&npu_opp_table>;
+		// 	resets = <&ccu RST_BUS_NPU_CORE>, <&ccu RST_BUS_NPU_AXI>, <&ccu RST_BUS_NPU_AHB>;
+		// 	reset-names = "npu_rst", "npu_axi_rst", "npu_ahb_rst";
+		// 	power-domains = <&pck600 PD_NPU>;
+		// 	npu-vf = <1008>;
+		// 	status = "disabled";
+		// };
 
 		hwspinlock: hwspinlock@3005000 {
 			compatible = "allwinner,sunxi-hwspinlock";
@@ -4519,9 +4523,9 @@
 				 <&ccu CLK_PLL_GPU0>,
 				 <&ccu CLK_BUS_GPU0>;
 			clock-names = "core", "mem", "sys";
-			power-domains = <&pck600 PD_GPU_CORE>;
-			// 	<&pck600 PD_GPU_TOP>;
-			// power-domain-names = "a", "b";
+			power-domains = <&pck600 PD_GPU_CORE>,
+				<&pck600 PD_GPU_TOP>;
+			power-domain-names = "a", "b";
 			resets = <&ccu RST_BUS_GPU0>;
 			operating-points-v2 = <&gpu_opp_table>;
 			#cooling-cells = <2>;
