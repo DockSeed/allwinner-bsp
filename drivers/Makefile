@@ -64,8 +64,5 @@ obj-y += power/
 obj-y += cpufreq/
 obj-y += devfreq/
 
-# AMP/XPU
-obj-y += npu/
-
 # Misc
 obj-y += misc/

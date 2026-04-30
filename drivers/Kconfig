@@ -67,9 +67,6 @@ source "$(BSP_TOP)drivers/power/Kconfig"
 source "$(BSP_TOP)drivers/cpufreq/Kconfig"
 source "$(BSP_TOP)drivers/devfreq/Kconfig"
 
-# AMP/XPU
-source "$(BSP_TOP)drivers/npu/Kconfig"
-
 # Misc
 source "$(BSP_TOP)drivers/misc/Kconfig"
 endmenu
