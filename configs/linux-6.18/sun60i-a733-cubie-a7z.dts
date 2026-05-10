@@ -46,7 +46,7 @@
 		compatible = "gpio-leds";
 
 		led-0 {
-			label = "radxa:blue:user";
+			label = "radxa:green:sys";
 			gpios = <&r_pio PM 2 GPIO_ACTIVE_HIGH>;
 			linux,default-trigger = "heartbeat";
 		};
@@ -597,16 +597,6 @@
 	auto_print@54321 {
 		reg = <0x0 0x54321 0x0 0x0>;
 		device_type = "auto_print";
-		status = "okay";
-	};
-
-	gpio_leds {
-		compatible = "allwinner,sunxi-gpio-leds";
-		supply-num = <1>;
-		gpio1-supply = <&reg_dcdc1>;
-		gpio-pins = <&pio PJ 26 GPIO_ACTIVE_HIGH>;
-		pin-names = "standby_led";
-		init-status = <GPIO_ACTIVE_HIGH>;
 		status = "okay";
 	};
 

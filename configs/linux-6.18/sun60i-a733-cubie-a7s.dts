@@ -647,17 +647,6 @@
 		device_type = "auto_print";
 		status = "okay";
 	};
-
-	gpio_leds {
-		compatible = "allwinner,sunxi-gpio-leds";
-		supply-num = <1>;
-		gpio1-supply = <&reg_dcdc1>;
-		gpio-pins = <&pio PJ 26 GPIO_ACTIVE_HIGH>;
-		pin-names = "standby_led";
-		init-status = <GPIO_ACTIVE_HIGH>;
-		status = "okay";
-	};
-
 };
 
 &uart0 {
@@ -853,7 +842,7 @@
 	vcc-supply = <&reg_dldo6>;
 	vccq-supply = <&reg_dcdc8>;
 	vccq2-supply = <&reg_dcdc8>;
-	status = "okay";
+	status = "disabled";
 };
 
 /*
