@@ -835,13 +835,6 @@
 	vdmmc33sw-supply = <&reg_dc1sw2>;
 	vqmmc18sw-supply = <&reg_cldo5>;
 	vdmmc18sw-supply = <&reg_cldo5>;
-	status = "okay";
-};
-
-&ufs {
-	vcc-supply = <&reg_dldo6>;
-	vccq-supply = <&reg_dcdc8>;
-	vccq2-supply = <&reg_dcdc8>;
 	status = "disabled";
 };
 

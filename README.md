@@ -65,7 +65,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |       |RGB    |rgb\*          |OFF    |               |
 |       |TCON   |tcon-\*        |BSP    |               |
 |DMA    |       |dma-v106       |BSP    |               |
-|ETH    |GMAC   |gmac\*         |OFF    |               |
+|ETH    |GMAC   |gmac\*         |BSP    |Untested       |
 |GPU    |PowerVR|img-bxm-4-64   |PATCH  |[2]            |
 |HW Spinlocks|  |hwspinlock     |OFF    |               |
 |I2C    |       |sun55i-a523-i2c|**MAIN**|Same as A523  |
@@ -85,7 +85,8 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |SERDES |       |cadence-\*     |BSP    |USB DP PCIE PHY|
 |SID    |EFUSE  |sunxi-sid      |BSP    |Untested       |
 |SPI    |       |sunxi-spi\*    |BSP    |Untested       |
-|Storage|SD/MMC |sunxi-mmc\*    |BSP    |[4]            |
+|Storage|SD/MMC |sdc0           |BSP    |[4]            |
+|       |eMMC   |sdc2           |BSP    |Not on A7Z, Untested|
 |       |UFS    |sunxi-ufs\*    |BSP    |Untested       |
 |Timer  |SOC    |soc_timer0     |BSP    |               |
 |UART   |       |uart\*         |**MAIN**|              |
@@ -129,7 +130,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 ### GPU: IMG PowerVR BXM
 It looks like the Imagination driver on Linux 6.18 is working fine on A733. \
 After putting the firmware [here](https://gitlab.freedesktop.org/imagination/linux-firmware/-/tree/powervr/powervr) to the correct place, it will load the driver. \
-After building the Mesa driver using the Mesa main branch, `vulkaninfo` can see the GPU, Wayland `sway` using GLES works, `vkmark` runs on screen.
+After building the Mesa driver using the Mesa main branch, `vulkaninfo` can see the GPU, Wayland `sway` using GLES works, `vkmark` runs on screen. \
 Thanks icenowy & iuncuim for the help on debugging.
 
 ### WIFI\BT: FCU760K/AIC8800
