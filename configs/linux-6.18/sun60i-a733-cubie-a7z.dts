@@ -594,12 +594,6 @@
 };
 
 &soc {
-	auto_print@54321 {
-		reg = <0x0 0x54321 0x0 0x0>;
-		device_type = "auto_print";
-		status = "okay";
-	};
-
 	fan0: pwm-fan {
 		compatible = "pwm-fan";
 		#cooling-cells = <2>;
@@ -756,40 +750,46 @@
 	};
 };
 
-// &mmc0 {
-// 	vmmc-supply = <&reg_dc1sw2>;
-// 	cd-gpios = <&pio PF 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
-// 	bus-width = <4>;
-// 	status = "okay";
-// };
-
-&sdc0 {
-	bus-width = <4>;
+&mmc0 {
 	cd-gpios = <&pio PF 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
-	/*non-removable;*/
-	/*broken-cd;*/
-	/*cd-inverted;*/
-	/*data3-detect;*/
-	/*card-pwr-gpios = <&pio PH 14 1 1 2 0xffffffff>;*/
-	cd-used-24M;
-	cd-set-debounce = <0x1>;
-	cap-sd-highspeed;
+	bus-width = <4>;
 	sd-uhs-sdr50;
 	sd-uhs-ddr50;
 	sd-uhs-sdr104;
 	no-sdio;
 	no-mmc;
-	sunxi-power-save-mode;
-	/*sunxi-dis-signal-vol-sw;*/
-	max-frequency = <200000000>;
-	ctl-spec-caps = <0x428>;
 	vmmc-supply = <&reg_dc1sw2>;
-	vqmmc33sw-supply = <&reg_dc1sw2>;
-	vdmmc33sw-supply = <&reg_dc1sw2>;
-	vqmmc18sw-supply = <&reg_cldo5>;
-	vdmmc18sw-supply = <&reg_cldo5>;
+	vqmmc-supply = <&reg_cldo5>;
+	max-frequency = <200000000>;
 	status = "okay";
 };
+
+// &sdc0 {
+// 	bus-width = <4>;
+// 	cd-gpios = <&pio PF 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+// 	/*non-removable;*/
+// 	/*broken-cd;*/
+// 	/*cd-inverted;*/
+// 	/*data3-detect;*/
+// 	/*card-pwr-gpios = <&pio PH 14 1 1 2 0xffffffff>;*/
+// 	cd-used-24M;
+// 	sd-uhs-sdr50;
+// 	sd-uhs-ddr50;
+// 	sd-uhs-sdr104;
+// 	no-sdio;
+// 	no-mmc;
+// 	sunxi-power-save-mode;
+// 	/*sunxi-dis-signal-vol-sw;*/
+// 	max-frequency = <200000000>;
+// 	ctl-spec-caps = <0x428>;
+// 	vmmc-supply = <&reg_dc1sw2>;
+// 	vqmmc-supply = <&reg_cldo5>;
+// 	vqmmc33sw-supply = <&reg_dc1sw2>;
+// 	vdmmc33sw-supply = <&reg_dc1sw2>;
+// 	vqmmc18sw-supply = <&reg_cldo5>;
+// 	vdmmc18sw-supply = <&reg_cldo5>;
+// 	status = "okay";
+// };
 
 &ufs {
 	vcc-supply = <&reg_dldo6>;

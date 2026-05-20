@@ -40,7 +40,7 @@ static const struct of_device_id sunxi_wlan_ids[];
 static int sunxi_wlan_on(struct sunxi_wlan_platdata *data, bool on_off);
 static DEFINE_MUTEX(sunxi_wlan_mutex);
 
-#if IS_ENABLED(CONFIG_MMC_SUNXI) || IS_ENABLED(CONFIG_AW_MMC)
+#if IS_ENABLED(CONFIG_AW_MMC)
 extern void sunxi_mmc_rescan_card(unsigned ids);
 #else
 static void sunxi_mmc_rescan_card(unsigned ids)
