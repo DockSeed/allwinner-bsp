@@ -141,6 +141,6 @@ Building the Mesa driver from the main branch enables full functionality: `vulka
 Thanks to icenowy & iuncuim for assistance with debugging.
 
 ### WIFI\BT: FCU760K/AIC8800
-Radxa maintains a dedicated [repo](https://github.com/radxa-pkg/aic8800) for AIC8800 drivers. Releases there are compatible with Debian-based distributions. \
-The AIC8800 is USB-based and not listed in the device tree. Drivers included here are stripped from Radxa’s repo (likely [this release](https://github.com/radxa-pkg/aic8800/releases/tag/4.0%2Bgit20250410.b99ca8b6-5)) \
-Firmware is required. Please put the firmware [here](https://github.com/radxa-pkg/aic8800/tree/main/src/USB/driver_fw/fw) in the correct place. (`dmesg` will warn if it’s missing.)
+Radxa maintains a dedicated [repo](https://github.com/radxa-pkg/aic8800) for AIC8800 drivers. Releases there should be compatible with Debian-based distributions. \
+The AIC8800 is USB-based and not listed in the device tree. Drivers included here are stripped from Radxa’s repo ([this release](https://github.com/radxa-pkg/aic8800/releases/tag/5.0%2Bgit20260123.5f7be68d-5)) \
+Firmware is required. `dmesg` will warn if it’s missing. Please put the firmware [here](https://github.com/radxa-pkg/aic8800/tree/main/src/USB/driver_fw/fw) in the correct place (put `aic8800D80` under `/lib/firmware/`). 
