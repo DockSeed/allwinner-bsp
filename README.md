@@ -66,6 +66,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |       |TCON   |tcon-\*        |BSP    |               |
 |DMA    |       |dma-v106       |BSP    |               |
 |ETH    |GMAC   |gmac\*         |BSP    |Untested       |
+|G2D    |       |g2d            |BSP    |What's this?   |
 |GPU    |PowerVR|img-bxm-4-64   |**PATCH**|[2][13]      |
 |HW Spinlocks|  |hwspinlock     |OFF    |               |
 |I2C    |       |sun55i-a523-i2c|**MAIN**|Same as A523  |
