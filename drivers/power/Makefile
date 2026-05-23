@@ -40,9 +40,6 @@ obj-$(CONFIG_AW_REGULATOR_PWM) 		+= regulator/sunxi_pwm_regulator.o
 obj-$(CONFIG_AW_REGULATOR_SOC_PMU)	+= regulator/sunxi-soc-regulator.o
 obj-$(CONFIG_AW_REGULATOR_VIRTUAL_CONSUMER) 	+= regulator/sunxi_virtual_consumer.o
 
-# type-c
-obj-$(CONFIG_AW_TYPEC_HUSB311)		+= typec/tcpci_husb311.o
-
 # supply-core
 obj-$(CONFIG_AW_POWER_SUPPLY_CTRL)		+= supply/sunxi_power_supply_core.o
 obj-$(CONFIG_AW_USB_POWER_CTRL)		+= supply/sunxi_usb_power_limit.o

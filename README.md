@@ -97,9 +97,10 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |VE     |       |sunxi-cedar-ve |BSP    |Untested       |
 |Watchdog|      |wdt-v103       |BSP    |Untested       |
 |WIFI/BT|       |aic8800        |BSP    |Radxa PKG[6]   |
-|**A7Z Specific**||             |       |               |
+|**Board Specific**||           |       |               |
 |USB-C  |PHY Switcher|phy_switcher|BSP  |               |
-|       |Controller|et7304      |**MAIN**|7.1[12]       |
+|       |Controller|et7304      |**MAIN**|A7Z 7.1[12]   |
+|       |Controller|husb311     |**MAIN**|A7S 7.1[12]   |
 |AXP PMU|       |axp8191        |BSP    |MAIN WIP[10]   |
 
 **Status**: 

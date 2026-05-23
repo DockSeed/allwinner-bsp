@@ -330,20 +330,4 @@ config AW_AXP8191_TEMP_CTRL
 
 endif
 
-comment "TYPE-C Ctrl Drivers"
-
-config AW_TYPEC_HUSB311
-	tristate "Hynetek HUSB311 Type-C chip driver"
-	select I2C
-	select TYPEC_TCPM
-	select TYPEC_TCPCI
-	select USB_SUNXI_TYPEC
-	select AW_POWER_NOTIFIER
-	help
-	  Hynetek HUSB311 Type-C chip driver that works with
-	  Type-C Port Controller Manager to provide USB PD and USB
-	  Type-C functionalities.
-
-	  If unsure, say N.
-
 endmenu
