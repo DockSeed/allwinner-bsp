@@ -15,26 +15,6 @@ config AW_BSP
 	  This enables support for Allwinner sunxi based SoCs like the A64.
 
 choice
-	prompt "Kernel Type"
-	depends on AW_BSP
-	default AW_KERNEL_AOSP
-	help
-	  Select the type/source of kernel you are using.
-
-config AW_KERNEL_AOSP
-	bool "AOSP"
-	depends on AW_BSP
-	help
-	  AOSP linux kernel from Google
-
-config AW_KERNEL_ORIGIN
-	bool "Origin"
-	depends on AW_BSP
-	help
-	  Origin linux kernel from mainline/LTS.
-endchoice  # Kernel Type
-
-choice
 	prompt "SoC Family"
 	default ARCH_SUN8I  if ARM
 	default ARCH_SUN50I if ARM64

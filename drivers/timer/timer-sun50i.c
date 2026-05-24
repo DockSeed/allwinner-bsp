@@ -409,7 +409,6 @@ static int sunxi_timer_init(struct device_node *node)
 	return ret;
 }
 
-#if IS_ENABLED(CONFIG_AW_KERNEL_ORIGIN)
 static int __init sun50i_timer_init(struct device_node *node)
 {
 	int ret;
@@ -424,51 +423,6 @@ TIMER_OF_DECLARE(sunxi_hstimer, "allwinner,hstimer-v100",
 		       sun50i_timer_init);
 TIMER_OF_DECLARE(sun50i, "allwinner,sun50i-timer",
 		       sun50i_timer_init);
-#else
-static int sun50i_timer_probe(struct platform_device *pdev)
-{
-	struct device_node *node = pdev->dev.of_node;
-	int ret;
-
-	ret = sunxi_timer_init(node);
-	if (ret)
-		return ret;
-
-	return 0;
-}
-
-static const struct of_device_id sun55iw3_sunxi_timer_ids[] = {
-	{ .compatible = "allwinner,sun50i-timer" },
-	{ .compatible = "allwinner,hstimer-v100" },
-	{}
-};
-
-static struct platform_driver sun55iw3_timer_driver = {
-	.probe  = sun50i_timer_probe,
-	.driver = {
-		.name  = "sun55iw3-timer",
-		.of_match_table = sun55iw3_sunxi_timer_ids,
-	},
-};
-
-static int __init sunxi_timer_sun55iw3_init(void)
-{
-	int ret;
-
-	ret = platform_driver_register(&sun55iw3_timer_driver);
-	if (ret)
-		sunxi_err(NULL, "register sun50i-timer sun55iw3 failed!\n");
-
-	return ret;
-}
-module_init(sunxi_timer_sun55iw3_init);
-
-static void __exit sunxi_timer_sun55iw3_exit(void)
-{
-	return platform_driver_unregister(&sun55iw3_timer_driver);
-}
-module_exit(sunxi_timer_sun55iw3_exit);
-#endif
 
 MODULE_AUTHOR("danghao <danghao@allwinnertech.com>");
 MODULE_VERSION(SUN50I_TIMER_MODULE_VERSION);

@@ -3284,7 +3284,7 @@
 			power-domain-names = "pd_de_sys";
 			assigned-clocks = <&ccu CLK_G2D>;
 			assigned-clock-rates = <300000000>;
-			status = "disabled";
+			status = "okay";
 		};
 
 		gmac_stmmac_axi_setup: stmmac-axi-config {
@@ -4949,13 +4949,9 @@
 			#address-cells = <3>;
 			#size-cells = <2>;
 			compatible = "allwinner,sunxi-pcie-v300-rc";
-			bus-range = <0x0 0xff>;
 			reg = <0 0x06000000 0 0x480000>;
 			reg-names = "dbi";
 			device_type = "pci";
-			ranges = <0x00000800 0 0x20000000 0x0 0x20000000 0 0x01000000
-				  0x81000000 0 0x21000000 0x0 0x21000000 0 0x01000000
-				  0x82000000 0 0x22000000 0x0 0x22000000 0 0x06000000>;
 			num-lanes = <1>;
 			phys = <&combo1_pcie>;
 			phy-names = "pcie-phy";
@@ -4971,12 +4967,6 @@
 				     <GIC_SPI 143 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "sii", "msi", "edma-w0", "edma-w1", "edma-w2", "edma-w3",
 					  "edma-r0", "edma-r1", "edma-r2", "edma-r3";
-			#interrupt-cells = <1>;
-			interrupt-map-mask = <0 0 0 7>;
-			interrupt-map = <0 0 0 1 &pcie_intc 0>,
-							<0 0 0 2 &pcie_intc 1>,
-							<0 0 0 3 &pcie_intc 2>,
-							<0 0 0 4 &pcie_intc 3>;
 			num-edma = <4>;
 			max-link-speed = <3>;
 			num-ib-windows = <16>;
@@ -4988,8 +4978,18 @@
 			resets = <&ccu RST_BUS_PCIE0>, <&ccu RST_BUS_PCIE0_PWRUP>, <&ccu RST_BUS_ITS_PCIE0>;
 			reset-names = "pclk_rst", "pwrup_rst", "its";
 			busno = <0>;
+			bus-range = <0x0 0xff>;
+			ranges = <0x00000800 0 0x20000000 0x0 0x20000000 0 0x01000000
+				  0x81000000 0 0x21000000 0x0 0x21000000 0 0x01000000
+				  0x82000000 0 0x22000000 0x0 0x22000000 0 0x06000000>;
 			status = "disabled";
 
+			#interrupt-cells = <1>;
+			interrupt-map-mask = <0 0 0 7>;
+			interrupt-map = <0 0 0 1 &pcie_intc 0>,
+							<0 0 0 2 &pcie_intc 1>,
+							<0 0 0 3 &pcie_intc 2>,
+							<0 0 0 4 &pcie_intc 3>;
 			pcie_intc: legacy-interrupt-controller {
 				interrupt-controller;
 				#address-cells = <0>;

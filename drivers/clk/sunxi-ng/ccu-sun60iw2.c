@@ -2895,53 +2895,12 @@ static int sun60iw2_ccu_really_probe(struct device_node *node)
 	return 0;
 }
 
-#if !IS_ENABLED(CONFIG_AW_KERNEL_ORIGIN)
 static void __init of_sun60iw2_ccu_init(struct device_node *node)
 {
 	sun60iw2_ccu_really_probe(node);
 }
 
 CLK_OF_DECLARE(sun60iw2_ccu_init, "allwinner,sun60iw2-ccu", of_sun60iw2_ccu_init);
-#else
-static int sun60iw2_ccu_probe(struct platform_device *pdev)
-{
-	struct device_node *node = pdev->dev.of_node;
-
-	return sun60iw2_ccu_really_probe(node);
-}
-
-static const struct of_device_id sun60iw2_ccu_ids[] = {
-	{ .compatible = "allwinner,sun60iw2-ccu" },
-	{ }
-};
-
-static struct platform_driver sun60iw2_ccu_driver = {
-	.probe	= sun60iw2_ccu_probe,
-	.driver	= {
-		.name	= "sun60iw2-ccu",
-		.of_match_table	= sun60iw2_ccu_ids,
-	},
-};
-
-static int __init sun60iw2_ccu_init(void)
-{
-	int err;
-
-	err = platform_driver_register(&sun60iw2_ccu_driver);
-	if (err)
-		pr_err("register ccu sun60iw2 failed\n");
-
-	return err;
-}
-
-core_initcall(sun60iw2_ccu_init);
-
-static void __exit sun60iw2_ccu_exit(void)
-{
-	platform_driver_unregister(&sun60iw2_ccu_driver);
-}
-module_exit(sun60iw2_ccu_exit);
-#endif
 
 MODULE_DESCRIPTION("Allwinner sun60iw2 clk driver");
 MODULE_AUTHOR("rengaomin<rengaomin@allwinnertech.com>");

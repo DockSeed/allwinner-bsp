@@ -254,11 +254,7 @@ void sunxi_ths_critical_rewrite_ops(struct ths_device *tmdev)
 
 	for (i = 0; i < tmdev->chip->sensor_num; i++) {
 		tzd = tmdev->sensor[i].tzd;
-#if IS_ENABLED(CONFIG_AW_KERNEL_AOSP)
-		trips_count = tzd->trips;
-#else
 		trips_count = tzd->num_trips;
-#endif
 		for (count = 0; count < trips_count; count++) {
 			tzd->ops->get_trip_type(tzd, count, &type);
 			if (type == THERMAL_TRIP_CRITICAL) {

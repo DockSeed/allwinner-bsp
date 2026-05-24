@@ -870,7 +870,7 @@ static inline struct scsi_device *sunxi_hba_to_wlun(struct ufs_hba *hba)
 	return sdp;
 }
 
-#if defined(CONFIG_AW_KERNEL_ORIGIN) && (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 98))
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 98)
 static int sunxi_ufs_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 {
 	int ret = 0;
