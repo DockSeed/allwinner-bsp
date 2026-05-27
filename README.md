@@ -47,7 +47,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |Driver |       |device-tree    |Status |Note           |
 |-      |-      |-              |-      |-              |
 |**A733**|      |               |       |               |
-|ADC    |GPADC  |gpadc0         |BSP    |               |
+|ADC    |GPADC  |gpadc0         |**MAIN**|7.2[14]       |
 |       |LRADC  |lradc          |OFF    |               |
 |       |Thermal|ths            |BSP    |               |
 |Audio  |sound  |sunxi-snd\*    |BSP    |Untested       |
@@ -126,7 +126,8 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 [11] https://lore.kernel.org/linux-sunxi/20260305-b4-pck600-a733-v2-0-ba6bbed7d253@gmail.com/ \
 [12] https://lore.kernel.org/linux-usb/20260220-et7304-v3-0-ede2d9634957@gmail.com/ \
 [12] https://lore.kernel.org/linux-usb/20260318-husb311-v4-0-69e029255430@flipper.net/ \
-[13] https://lore.kernel.org/linux-sunxi/20260510-pck600-a733-gpu-v1-1-d6393646d714@gmail.com/
+[13] https://lore.kernel.org/linux-sunxi/20260510-pck600-a733-gpu-v1-1-d6393646d714@gmail.com/ \
+[14] https://lore.kernel.org/linux-sunxi/20260516-sunxi-a523-gpadc-v3-0-a3a04cff2620@mmpsystems.pl/
 
 ## Driver Specific
 

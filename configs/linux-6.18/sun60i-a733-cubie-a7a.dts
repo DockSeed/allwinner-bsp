@@ -967,7 +967,7 @@
 };
 
 &pcie_rc {
-	power-gpios =  <&pio PE 11 GPIO_ACTIVE_HIGH>;
+	power-gpios = <&pio PE 11 GPIO_ACTIVE_HIGH>;
 	reset-gpios = <&pio PE 13 GPIO_ACTIVE_HIGH>;
 	wake-gpios = <&pio PE 12 GPIO_ACTIVE_HIGH>;
 	pcie1v8-supply = <&reg_bldo1>;
@@ -1807,20 +1807,20 @@
 	status = "okay";
 };
 
-&gpadc0 {
-    channel_num = <8>;
-	gpadc_mode_select = <0x2>;
-    channel_select = <0xff>;
-    channel_data_select = <0xff>;
-    channel_compare_select = <0x0>;
-    channel_cld_select = <0x0>;
-    channel_chd_select = <0x0>;
-    // channel0_compare_lowdata = <1700000>;
-    // channel0_compare_higdata = <1200000>;
-    // channel1_compare_lowdata = <460000>;
-    // channel1_compare_higdata = <1200000>;
-    status = "okay";
-};
+// &gpadc0 {
+//     channel_num = <8>;
+// 	gpadc_mode_select = <0x2>;
+//     channel_select = <0xff>;
+//     channel_data_select = <0xff>;
+//     channel_compare_select = <0x0>;
+//     channel_cld_select = <0x0>;
+//     channel_chd_select = <0x0>;
+//     // channel0_compare_lowdata = <1700000>;
+//     // channel0_compare_higdata = <1200000>;
+//     // channel1_compare_lowdata = <460000>;
+//     // channel1_compare_higdata = <1200000>;
+//     status = "okay";
+// };
 
 &s_irrx {
 	pinctrl-names = "default", "sleep";

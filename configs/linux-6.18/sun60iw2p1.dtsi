@@ -37,7 +37,6 @@
 		spi3 = &spi3;
 		spi4 = &spi4;
 		spi5 = &r_spi;
-		gpadc0 = &gpadc0;
 		ir0 = &irrx;
 		ir1 = &s_irrx;
 		ir2 = &irtx;
@@ -2165,15 +2164,26 @@
 			status = "disabled";
 		};
 
-		gpadc0: gpadc@2521000 {
-			compatible = "allwinner,sunxi-gpadc-v101";
+		gpadc: adc@2521000 {
+			compatible = "allwinner,sun55i-a523-gpadc";
 			reg = <0x0 0x02521000 0x0 0x400>;
-			interrupts = <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&ccu CLK_GPADC0>, <&ccu CLK_GPADC0_24M>;
 			clock-names = "bus", "hosc";
 			resets = <&ccu RST_BUS_GPADC0>;
+			interrupts = <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>;
+			#io-channel-cells = <1>;
 			status = "disabled";
 		};
+
+		// gpadc0: gpadc@2521000 {
+		// 	compatible = "allwinner,sunxi-gpadc-v101";
+		// 	reg = <0x0 0x02521000 0x0 0x400>;
+		// 	interrupts = <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>;
+		// 	clocks = <&ccu CLK_GPADC0>, <&ccu CLK_GPADC0_24M>;
+		// 	clock-names = "bus", "hosc";
+		// 	resets = <&ccu RST_BUS_GPADC0>;
+		// 	status = "disabled";
+		// };
 
 		irrx: irrx@2526000 {
 			compatible = "allwinner,irrx";
