@@ -572,17 +572,6 @@
 		pins = "PC12", "PC2", "PC4", "PC3";
 		function = "io_disabled";
 	};
-
-	ledc_pins_a: ledc@0 {
-		pins = "PE4";
-		function = "ledc";
-		drive-strength = <10>;
-	};
-
-	ledc_pins_b: ledc@1 {
-		pins = "PE4";
-		function = "gpio_in";
-	};
 };
 
 &r_pio {

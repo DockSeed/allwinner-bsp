@@ -47,7 +47,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |Driver |       |device-tree    |Status |Note           |
 |-      |-      |-              |-      |-              |
 |**A733**|      |               |       |               |
-|ADC    |GPADC  |gpadc0         |**MAIN**|7.2[14]       |
+|ADC    |GPADC  |gpadc          |**MAIN**|7.2[14]       |
 |       |LRADC  |lradc          |OFF    |               |
 |       |Thermal|ths            |BSP    |               |
 |Audio  |sound  |sunxi-snd\*    |BSP    |Untested       |
@@ -66,14 +66,14 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |       |TCON   |tcon-\*        |BSP    |               |
 |DMA    |       |dma-v106       |BSP    |               |
 |ETH    |GMAC   |gmac\*         |BSP    |Untested       |
-|G2D    |       |g2d            |BSP    |What's this?   |
+|G2D    |       |g2d            |BSP    |               |
 |GPU    |PowerVR|img-bxm-4-64   |**PATCH**|[2][13]      |
 |HW Spinlocks|  |hwspinlock     |OFF    |               |
 |I2C    |       |sun55i-a523-i2c|**MAIN**|Same as A523  |
 |IOMMU  |       |iommu-v20      |BSP    |               |
 |IR     |IR RX  |irrx           |UNK    |               |
 |       |IR TX  |irtx           |OFF    |               |
-|LEDC   |       |sunxi-leds     |BSP    |               |
+|LEDC   |       |sunxi-leds     |**MAIN**|Same as A523  |
 |MsgBox |       |msgbox         |OFF    |               |
 |NPU    |       |npu            |**PATCH**|Untested[3]  |
 |NSI    |       |sunxi-nsi      |BSP    |What's this?   |

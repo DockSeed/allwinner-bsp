@@ -929,6 +929,13 @@
 			interrupt-controller;
 			#interrupt-cells = <3>;
 
+			/omit-if-no-ref/
+			ledc_pe_pin: ledc-pe-pin {
+				pins = "PE4";
+				function = "ledc";
+				drive-strength = <10>;
+			};
+
 			sdc0_pins_f: sdc0@5 {
 				pins = "PF2";
 				function = "sdc0";
@@ -2215,20 +2222,35 @@
 			status = "disabled";
 		};
 
-		ledc: ledc@2520000 {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			compatible = "allwinner,sunxi-leds";
+		ledc: led-controller@2520000 {
+			compatible = "allwinner,sun55i-a523-ledc",
+				     "allwinner,sun50i-a100-ledc";
 			reg = <0x0 0x02520000 0x0 0x400>;
 			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&ccu CLK_LEDC>, <&ccu CLK_BUS_LEDC>;
-			clock-names = "clk_ledc", "clk_cpuapb";
+			clocks = <&ccu CLK_BUS_LEDC>, <&ccu CLK_LEDC>;
+			clock-names = "bus", "mod";
 			resets = <&ccu RST_BUS_LEDC>;
-			reset-names = "ledc_reset";
 			dmas = <&dma 46>;
 			dma-names = "tx";
+			#address-cells = <1>;
+			#size-cells = <0>;
 			status = "disabled";
 		};
+
+		// ledc: ledc@2520000 {
+		// 	#address-cells = <1>;
+		// 	#size-cells = <0>;
+		// 	compatible = "allwinner,sunxi-leds";
+		// 	reg = <0x0 0x02520000 0x0 0x400>;
+		// 	interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
+		// 	clocks = <&ccu CLK_LEDC>, <&ccu CLK_BUS_LEDC>;
+		// 	clock-names = "clk_ledc", "clk_cpuapb";
+		// 	resets = <&ccu RST_BUS_LEDC>;
+		// 	reset-names = "ledc_reset";
+		// 	dmas = <&dma 46>;
+		// 	dma-names = "tx";
+		// 	status = "disabled";
+		// };
 
 		npu: npu@3600000 {
 			compatible = "vivante,gc";
