@@ -95,7 +95,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |       |USB OTG|sunxi-udc/otg  |BSP    |               |
 |       |USB 3.0|dwc3           |BSP    |[5]            |
 |VE     |       |sunxi-cedar-ve |BSP    |Untested       |
-|Watchdog|      |wdt-v103       |BSP    |Untested       |
+|Watchdog|      |wdt            |**MAIN**|Same as A523  |
 |WIFI/BT|       |aic8800        |BSP    |Radxa PKG[6]   |
 |**Board Specific**||           |       |               |
 |USB-C  |PHY Switcher|phy_switcher|BSP  |               |

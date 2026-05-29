@@ -1323,9 +1323,10 @@
 		};
 
 		wdt: watchdog@2050000 {
-			compatible = "allwinner,wdt-v103";
+			compatible = "allwinner,sun55i-a523-wdt";
 			reg = <0x0 0x02050000 0x0 0x20>;
 			interrupts = <GIC_SPI 106 IRQ_TYPE_LEVEL_HIGH>;
+			status = "okay";
 		};
 
 		dma: dma-controller@4601000 {
@@ -2182,16 +2183,6 @@
 			status = "disabled";
 		};
 
-		// gpadc0: gpadc@2521000 {
-		// 	compatible = "allwinner,sunxi-gpadc-v101";
-		// 	reg = <0x0 0x02521000 0x0 0x400>;
-		// 	interrupts = <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>;
-		// 	clocks = <&ccu CLK_GPADC0>, <&ccu CLK_GPADC0_24M>;
-		// 	clock-names = "bus", "hosc";
-		// 	resets = <&ccu RST_BUS_GPADC0>;
-		// 	status = "disabled";
-		// };
-
 		irrx: irrx@2526000 {
 			compatible = "allwinner,irrx";
 			reg = <0x0 0x02526000 0x0 0x400>;
@@ -2236,21 +2227,6 @@
 			#size-cells = <0>;
 			status = "disabled";
 		};
-
-		// ledc: ledc@2520000 {
-		// 	#address-cells = <1>;
-		// 	#size-cells = <0>;
-		// 	compatible = "allwinner,sunxi-leds";
-		// 	reg = <0x0 0x02520000 0x0 0x400>;
-		// 	interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
-		// 	clocks = <&ccu CLK_LEDC>, <&ccu CLK_BUS_LEDC>;
-		// 	clock-names = "clk_ledc", "clk_cpuapb";
-		// 	resets = <&ccu RST_BUS_LEDC>;
-		// 	reset-names = "ledc_reset";
-		// 	dmas = <&dma 46>;
-		// 	dma-names = "tx";
-		// 	status = "disabled";
-		// };
 
 		npu: npu@3600000 {
 			compatible = "vivante,gc";
