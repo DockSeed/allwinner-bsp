@@ -78,6 +78,7 @@ config AW_DRM_DSI
 	bool "Support DSI Output"
 	depends on AW_DRM
 	select DRM_MIPI_DSI
+	select PANEL_DSI_GENERAL
 	select GENERIC_PHY
 	select GENERIC_PHY_MIPI_DPHY
 	default n

@@ -31,11 +31,7 @@
 #include <drm/drm_crtc.h>
 #include "panel-dsi.h"
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 #include <drm/display/drm_dsc_helper.h>
-#else
-#include <drm/drm_dsc.h>
-#endif
 
 /*
 static const struct drm_display_mode auo_b080uan01_mode = {
@@ -236,7 +232,7 @@ static int panel_dsi_get_timings(struct drm_panel *panel,
 }
 */
 
-void panel_dsi_esd_reset(struct panel_dsi *dsi_panel, unsigned int items)
+static void panel_dsi_esd_reset(struct panel_dsi *dsi_panel, unsigned int items)
 {
 	struct gpio_timing *timing;
 	int i;
@@ -335,9 +331,8 @@ int panel_dsi_regulator_enable(struct drm_panel *panel)
 	struct panel_dsi *dsi_panel = to_panel_dsi(panel);
 	int err, i;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
 	panel->prepared = true;
-#endif
+
 	for (i = 0; i < dsi_panel->power_num; i++) {
 		if (dsi_panel->supply[i]) {
 			err = regulator_enable(dsi_panel->supply[i]);
@@ -389,11 +384,7 @@ static int sunxi_dsc_panel_enable(struct panel_dsi *dsi_panel)
 //	void *value = NULL;
 
 	mipi_dsi_compression_mode(dsi, true);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 	drm_dsc_pps_payload_pack(&pps, dsi->dsc);
-#else
-	drm_dsc_pps_payload_pack(&pps, dsi_panel->dsc);
-#endif
 	ret = mipi_dsi_picture_parameter_set(dsi, &pps);
 	if (ret) {
 		dev_err(&dsi->dev, "Failed to set PPS\n");
@@ -919,11 +910,7 @@ static int panel_dsi_probe(struct mipi_dsi_device *dsi)
 	if (ret < 0)
 		return ret;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 	dsi->dsc = dsi_panel->desc->dsc;
-#else
-	dsi_panel->dsc = dsi_panel->desc->dsc;
-#endif
 	/* Register the panel. */
 	drm_panel_init(&dsi_panel->panel, dev, &panel_dsi_funcs,
 			DRM_MODE_CONNECTOR_DSI);
@@ -959,11 +946,7 @@ static int panel_simple_remove(struct device *dev)
 	return 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
-static int panel_dsi_remove(struct mipi_dsi_device *dsi)
-#else
 static void panel_dsi_remove(struct mipi_dsi_device *dsi)
-#endif
 {
 /*	int err;
 
@@ -971,11 +954,7 @@ static void panel_dsi_remove(struct mipi_dsi_device *dsi)
 	if (err < 0)
 		dev_err(&dsi->dev, "failed to detach from DSI host: %d\n", err);
 */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
-	return panel_simple_remove(&dsi->dev);
-#else
 	panel_simple_remove(&dsi->dev);
-#endif
 }
 
 MODULE_DEVICE_TABLE(of, dsi_of_match);

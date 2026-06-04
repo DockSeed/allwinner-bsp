@@ -54,7 +54,7 @@ sunxidrm-$(CONFIG_AW_DRM_INNO_EDP13) += sunxi_device/hardware/lowlevel_edp/inno_
 sunxidrm-$(CONFIG_AW_DRM_TRILINEAR_EDP14) += sunxi_device/hardware/lowlevel_edp/trilinear_dp14/trilinear_dp14.o
 
 # phy
-obj-$(CONFIG_AW_DRM_PHY) += phy/
+obj-$(CONFIG_AW_DRM_DSI_COMBOPHY) += phy/
 
 # panel
 obj-y += panel/

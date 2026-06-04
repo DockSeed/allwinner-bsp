@@ -15,6 +15,7 @@
 #include <linux/pinctrl/consumer.h>
 #include <linux/pinctrl/machine.h>
 #include <linux/of_device.h>
+#include <linux/of_platform.h>
 #include <linux/clk.h>
 #include <linux/reset.h>
 #include <linux/gpio.h>
@@ -35,11 +36,7 @@
 #include <drm/drm_property.h>
 #include <drm/drm_fb_helper.h>
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 #include <drm/display/drm_dsc_helper.h>
-#else
-#include <drm/drm_dsc.h>
-#endif
 
 #include "sunxi-sid.h"
 #include "sunxi_drm_drv.h"
@@ -215,7 +212,7 @@ static inline u64 sunxi_dsi_vblank_cnt_and_time(struct sunxi_drm_dsi *dsi, ktime
 	return vblank_cnt;
 }
 
-u64 sunxi_dsi_get_refreshraw_and_vblankcnt(struct sunxi_drm_dsi *dsi)
+static u64 sunxi_dsi_get_refreshraw_and_vblankcnt(struct sunxi_drm_dsi *dsi)
 {
 	static ktime_t time_us[2];
 	u64 vblank_cnt[2];
@@ -665,9 +662,7 @@ static int sunxi_dsi_disable_output(struct sunxi_drm_dsi *dsi)
 
 static int dsi_populate_dsc_params(struct sunxi_drm_dsi *dsi, struct drm_dsc_config *dsc)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 	int ret;
-#endif
 
 	if (dsc->bits_per_pixel & 0xf) {
 		DRM_ERROR("DSI does not support fractional bits_per_pixel\n");
@@ -683,7 +678,6 @@ static int dsi_populate_dsc_params(struct sunxi_drm_dsi *dsi, struct drm_dsc_con
 	dsc->convert_rgb = 1;
 	dsc->vbr_enable = 0;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 	drm_dsc_set_const_params(dsc);
 	drm_dsc_set_rc_buf_thresh(dsc);
 
@@ -695,11 +689,7 @@ static int dsi_populate_dsc_params(struct sunxi_drm_dsi *dsi, struct drm_dsc_con
 	}
 
 	dsc->initial_scale_value = drm_dsc_initial_scale_value(dsc);
-/*
-#else
-	before Linux-6.1, you need to implement it yourself
-*/
-#endif
+
 	dsc->line_buf_depth = dsc->bits_per_component + 1;
 
 	return drm_dsc_compute_rc_parameters(dsc);
@@ -919,9 +909,8 @@ void sunxi_drm_dsi_encoder_atomic_disable(struct drm_encoder *encoder,
 		return;
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
 	dsi->sdrm.panel->prepare_prev_first = false;
-#endif
+
 	if (dsi->dsi_para.mode_flags & (MIPI_DSI_ASYNC_INCELL | MIPI_DSI_SYNC_INCELL))
 #if IS_ENABLED (CONFIG_DRM_FBDEV_EMULATION)
 		dsi_notify_call_chain(SUNXI_PANEL_EVENT_BLANK,
@@ -976,7 +965,7 @@ static bool sunxi_dsi_fifo_check(void *data)
 	return status ? true : false;
 }
 
-int sunxi_dsi_get_current_line(void *data)
+static int sunxi_dsi_get_current_line(void *data)
 {
 	struct sunxi_drm_dsi *dsi = (struct sunxi_drm_dsi *)data;
 	if (dsi->slave || (dsi->dsi_para.mode_flags & MIPI_DSI_SLAVE_MODE))
@@ -1062,7 +1051,7 @@ static void sunxi_drm_dsi_encoder_atomic_mode_set(struct drm_encoder *encoder,
 	drm_mode_copy(&dsi->mode, &crtc_state->adjusted_mode);
 }
 
-struct sunxi_drm_dsi *drm_device_to_dsi(struct drm_device *dev)
+static struct sunxi_drm_dsi *drm_device_to_dsi(struct drm_device *dev)
 {
 	struct drm_connector *connector;
 	struct sunxi_drm_dsi *dsi = NULL;
@@ -1152,7 +1141,7 @@ static int sunxi_set_dsi_mode(struct drm_device *dev, struct lcd_timing *reg)
 	return 0;
 }
 
-void sunxi_set_disp_dsi_para(struct drm_device *dev, unsigned long *arg)
+static void sunxi_set_disp_dsi_para(struct drm_device *dev, unsigned long *arg)
 {
 	int i, ret;
 	struct lcd_timing *reg;
@@ -1184,7 +1173,7 @@ void sunxi_set_disp_dsi_para(struct drm_device *dev, unsigned long *arg)
 	kfree(reg);
 }
 
-void sunxi_get_disp_dsi_para(struct drm_device *dev, unsigned long *arg)
+static void sunxi_get_disp_dsi_para(struct drm_device *dev, unsigned long *arg)
 {
 	struct lcd_timing *reg;
 	struct sunxi_drm_dsi *dsi;
@@ -1576,15 +1565,12 @@ static const struct attribute_group dsi_attr_group = {
 	.attrs = dsi_attrs,
 };
 
-int sunxi_dsi_init_sysfs(struct sunxi_drm_dsi *drm_dsi)
+static int sunxi_dsi_init_sysfs(struct sunxi_drm_dsi *drm_dsi)
 {
 	int ret;
 	/* Create a path: sys/class/dsi */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
-	drm_dsi->dsi_class = class_create(THIS_MODULE, "dsi");
-#else
 	drm_dsi->dsi_class = class_create("dsi");
-#endif
+
 	if (IS_ERR(drm_dsi->dsi_class)) {
 		DRM_ERROR("dsi class_create fail\n");
 		return PTR_ERR(drm_dsi->dsi_class);
@@ -1745,13 +1731,8 @@ static int sunxi_drm_dsi_host_attach(struct mipi_dsi_host *host,
 	dsi->dsi_para.lp_rate = device->lp_rate;
 	dsi->dsi_para.vrr_setp = dsi_panel->vrr_setp;
 	dsi->pll_ss_permille = dsi_panel->pll_ss_permille;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 	if (device->dsc)
 		dsi->dsc = device->dsc;
-#else
-	if (dsi_panel->dsc)
-		dsi->dsc = dsi_panel->dsc;
-#endif
 
 	ret = component_add(dsi->dev, &sunxi_drm_dsi_component_ops);
 	if (ret) {
@@ -1998,10 +1979,9 @@ static int sunxi_drm_dsi_probe(struct platform_device *pdev)
 	/* return component_add(&pdev->dev, &sunxi_drm_dsi_component_ops); */
 }
 
-static int sunxi_drm_dsi_remove(struct platform_device *pdev)
+static void sunxi_drm_dsi_remove(struct platform_device *pdev)
 {
 	component_del(&pdev->dev, &sunxi_drm_dsi_component_ops);
-	return 0;
 }
 
 struct platform_driver sunxi_dsi_platform_driver = {

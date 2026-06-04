@@ -13,7 +13,6 @@ source "$(BSP_TOP)drivers/dma/Kconfig"
 source "$(BSP_TOP)drivers/rtc/Kconfig"
 source "$(BSP_TOP)drivers/bus/Kconfig"
 source "$(BSP_TOP)drivers/dumpreg/Kconfig"
-source "$(BSP_TOP)drivers/watchdog/Kconfig"
 source "$(BSP_TOP)drivers/iommu/Kconfig"
 
 # Storage
@@ -49,9 +48,7 @@ source "$(BSP_TOP)drivers/stmmac/Kconfig"
 source "$(BSP_TOP)drivers/usb/Kconfig"
 source "$(BSP_TOP)drivers/twi/Kconfig"
 source "$(BSP_TOP)drivers/spi-ng/Kconfig"
-source "$(BSP_TOP)drivers/ledc/Kconfig"
 source "$(BSP_TOP)drivers/pwm/Kconfig"
-source "$(BSP_TOP)drivers/gpadc/Kconfig"
 source "$(BSP_TOP)drivers/input/Kconfig"
 
 # Wireless

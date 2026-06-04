@@ -58,7 +58,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |Crypto |       |sunxi-ce       |OFF    |               |
 |DRM    |DE     |display-engine |BSP    |               |
 |       |DI     |deinterlace    |BSP    |               |
-|       |DSI    |dsi\*(combophy)|UNK    |               |
+|       |DSI    |dsi\*(combophy)|BSP    |Untested       |
 |       |EDP    |sunxi-edp      |BSP    |               |
 |       |HDMI   |sunxi-hdmi     |BSP    |               |
 |       |LVDS   |lvds\*         |OFF    |               |
@@ -67,7 +67,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |DMA    |       |dma-v106       |BSP    |               |
 |ETH    |GMAC   |gmac\*         |BSP    |Untested       |
 |G2D    |       |g2d            |BSP    |               |
-|GPU    |PowerVR|img-bxm-4-64   |**PATCH**|[2][13]      |
+|GPU    |PowerVR|img-bxm-4-64   |**MAIN**|[2] 7.2[13]   |
 |HW Spinlocks|  |hwspinlock     |OFF    |               |
 |I2C    |       |sun55i-a523-i2c|**MAIN**|Same as A523  |
 |IOMMU  |       |iommu-v20      |BSP    |               |
@@ -111,7 +111,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 - UNK: Unknown, disabled now, but enabled on Radxa config/dt
 
 [1] Didn't port VIN Drivers since I don't have any camera to test. \
-[2] Mainline Driver for BXM works, but patch for pck600 is needed (disable power_off). \
+[2] Mainline Driver for BXM works, but patch for pck600 is needed (GENPD_FLAG_ALWAYS_ON). \
 [3] Mainline vivante,gc can be detected, but need extra clocks & resets. \
 [4] Mainline allwinner,sun55i-a523-(e)mmc works, need extra clocks & pinctrl fix. \
 [5] Mainline dwc exists, please check linux-sunxi website. \

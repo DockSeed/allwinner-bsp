@@ -11,7 +11,6 @@ obj-y += dma/
 obj-y += rtc/
 obj-y += bus/
 obj-y += dumpreg/
-obj-y += watchdog/
 obj-y += iommu/
 
 # Storage
@@ -47,9 +46,7 @@ obj-y += stmmac/
 obj-y += usb/
 obj-y += twi/
 obj-y += spi-ng/
-obj-y += ledc/
 obj-y += pwm/
-obj-y += gpadc/
 obj-y += input/
 
 # Wireless

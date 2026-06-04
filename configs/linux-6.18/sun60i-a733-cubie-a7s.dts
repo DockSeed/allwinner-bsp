@@ -1423,24 +1423,6 @@
 	extcon = <&serdes>;
 
 	status = "okay";
-	ports {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		edp_in: port@0 {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			reg = <0>;
-			edp0_in_tcon4: endpoint@0 {
-				reg = <0>;
-				remote-endpoint = <&tcon4_out_edp0>;
-			};
-		};
-		edp_out: port@1 {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			reg = <1>;
-		};
-	};
 };
 
 &cpu0 {
