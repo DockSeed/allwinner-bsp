@@ -374,18 +374,6 @@ static const struct of_device_id sunxi_pcie_plat_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, sunxi_pcie_plat_of_match);
 
-#if defined(CONFIG_AW_FPGA_S4) || defined(CONFIG_AW_FPGA_V7)
-static inline void sunxi_pcie_writel_phy(struct sunxi_pcie *pci, u32 val, u32 reg)
-{
-	writel(val, pci->phy_base + reg);
-}
-
-static inline u32 sunxi_pcie_readl_phy(struct sunxi_pcie *pci, u32 reg)
-{
-	return readl(pci->phy_base + reg);
-}
-#endif
-
 void sunxi_pcie_plat_ltssm_enable(struct sunxi_pcie *pcie)
 {
 	u32 val;
@@ -1149,11 +1137,7 @@ err0:
 	return ret;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
-static int sunxi_pcie_plat_remove(struct platform_device *pdev)
-#else
 static void sunxi_pcie_plat_remove(struct platform_device *pdev)
-#endif
 {
 	struct sunxi_pcie *pci = platform_get_drvdata(pdev);
 
@@ -1178,10 +1162,6 @@ static void sunxi_pcie_plat_remove(struct platform_device *pdev)
 	}
 
 	sunxi_pcie_plat_ltssm_disable(pci);
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
-	return 0;
-#endif
 }
 
 #if IS_ENABLED(CONFIG_PM)

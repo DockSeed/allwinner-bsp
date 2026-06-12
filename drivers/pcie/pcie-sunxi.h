@@ -280,13 +280,8 @@ struct sunxi_pcie_ep {
 
 struct sunxi_pcie_ep_ops {
 	void	(*ep_init)(struct sunxi_pcie_ep *ep);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
-	int	(*raise_irq)(struct sunxi_pcie_ep *ep, u8 func_no,
-			     enum pci_epc_irq_type type, u16 interrupt_num);
-#else
 	int	(*raise_irq)(struct sunxi_pcie_ep *ep, u8 func_no,
 			     unsigned int type, u16 interrupt_num);
-#endif
 	const struct pci_epc_features *(*get_features)(struct sunxi_pcie_ep *ep);
 	unsigned int (*func_conf_select)(struct sunxi_pcie_ep *ep, u8 func_no);
 };
@@ -305,7 +300,6 @@ struct sunxi_pcie_port {
 	int				msi_irq;
 	struct irq_domain		*intx_domain;
 	struct irq_domain		*irq_domain;
-	struct irq_domain		*msi_domain;
 	u16			msi_msg;
 	dma_addr_t		msi_data;
 	struct pci_host_bridge		*bridge;
@@ -321,11 +315,6 @@ struct sunxi_pcie {
 	struct device		*dev;
 	void __iomem		*dbi_base;
 	void __iomem		*app_base;
-#if defined(CONFIG_AW_FPGA_S4) || defined(CONFIG_AW_FPGA_V7)
-	void __iomem		*phy_base;
-	void __iomem		*clk_base;
-	struct regmap		*phy_i2c;
-#endif
 	int			link_gen;
 	struct sunxi_pcie_port	pp;
 	struct sunxi_pcie_ep	ep;

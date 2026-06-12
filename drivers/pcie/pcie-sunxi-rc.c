@@ -22,6 +22,7 @@
 #define SUNXI_MODNAME "pcie-rc"
 #include <sunxi-log.h>
 #include <linux/irq.h>
+#include <linux/irqchip/irq-msi-lib.h>
 #include <linux/irqdomain.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -72,21 +73,9 @@ int sunxi_pcie_host_wr_own_conf(struct sunxi_pcie_port *pp, int where, int size,
 	return ret;
 }
 
-static void sunxi_msi_top_irq_ack(struct irq_data *d)
+static void sunxi_msi_ack_irq(struct irq_data *d)
 {
 	/* NULL */
-}
-
-static struct irq_chip sunxi_msi_top_chip = {
-	.name	     = "SUNXI-PCIe-MSI",
-	.irq_ack     = sunxi_msi_top_irq_ack,
-	.irq_mask    = pci_msi_mask_irq,
-	.irq_unmask  = pci_msi_unmask_irq,
-};
-
-static int sunxi_msi_set_affinity(struct irq_data *d, const struct cpumask *mask, bool force)
-{
-	return -EINVAL;
 }
 
 static void sunxi_compose_msi_msg(struct irq_data *data, struct msi_msg *msg)
@@ -108,11 +97,11 @@ static void sunxi_compose_msi_msg(struct irq_data *data, struct msi_msg *msg)
  */
 static struct irq_chip sunxi_msi_bottom_chip = {
 	.name			= "SUNXI MSI",
-	.irq_set_affinity 	= sunxi_msi_set_affinity,
 	.irq_compose_msi_msg	= sunxi_compose_msi_msg,
+	.irq_ack                = sunxi_msi_ack_irq,
 };
 
-static int sunxi_msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
+static int sunxi_irq_domain_alloc(struct irq_domain *domain, unsigned int virq,
 				  unsigned int nr_irqs, void *args)
 {
 	struct sunxi_pcie_port *pp = domain->host_data;
@@ -138,7 +127,7 @@ static int sunxi_msi_domain_alloc(struct irq_domain *domain, unsigned int virq,
 	return 0;
 }
 
-static void sunxi_msi_domain_free(struct irq_domain *domain, unsigned int virq,
+static void sunxi_irq_domain_free(struct irq_domain *domain, unsigned int virq,
 				  unsigned int nr_irqs)
 {
 	struct irq_data *d = irq_domain_get_irq_data(domain, virq);
@@ -153,40 +142,48 @@ static void sunxi_msi_domain_free(struct irq_domain *domain, unsigned int virq,
 }
 
 static const struct irq_domain_ops sunxi_msi_domain_ops = {
-	.alloc	= sunxi_msi_domain_alloc,
-	.free	= sunxi_msi_domain_free,
+	.alloc	= sunxi_irq_domain_alloc,
+	.free	= sunxi_irq_domain_free,
 };
 
-static struct msi_domain_info sunxi_msi_info = {
-	.flags	= (MSI_FLAG_USE_DEF_DOM_OPS | MSI_FLAG_USE_DEF_CHIP_OPS | MSI_FLAG_MULTI_PCI_MSI),
-	.chip	= &sunxi_msi_top_chip,
+#define SUNXI_MSI_FLAGS_REQUIRED (MSI_FLAG_USE_DEF_DOM_OPS	| \
+				 MSI_FLAG_USE_DEF_CHIP_OPS		| \
+				    MSI_FLAG_NO_AFFINITY)
+
+#define SUNXI_MSI_FLAGS_SUPPORTED (MSI_GENERIC_FLAGS_MASK	| \
+				  MSI_FLAG_MULTI_PCI_MSI)
+
+static const struct msi_parent_ops sunxi_msi_parent_ops = {
+	.required_flags		= SUNXI_MSI_FLAGS_REQUIRED,
+	.supported_flags	= SUNXI_MSI_FLAGS_SUPPORTED,
+	.bus_select_token	= DOMAIN_BUS_PCI_MSI,
+	.chip_flags		= MSI_CHIP_FLAG_SET_ACK,
+	.prefix			= "SUNXI-",
+	.init_dev_msi_info	= msi_lib_init_dev_msi_info,
 };
 
-static int sunxi_allocate_msi_domains(struct sunxi_pcie_port *pp)
+static int sunxi_allocate_domains(struct sunxi_pcie_port *pp)
 {
 	struct fwnode_handle *fwnode = dev_fwnode(pp->dev);
 
-	pp->irq_domain = irq_domain_create_linear(fwnode, INT_PCI_MSI_NR,
-							  &sunxi_msi_domain_ops, pp);
-	if (!pp->irq_domain) {
-		sunxi_err(pp->dev, "failed to create IRQ domain\n");
-		return -ENOMEM;
-	}
-	irq_domain_update_bus_token(pp->irq_domain, DOMAIN_BUS_NEXUS);
+	struct irq_domain_info info = {
+		.fwnode		= fwnode,
+		.ops		= &sunxi_msi_domain_ops,
+		.size		= INT_PCI_MSI_NR,
+		.host_data	= pp,
+	};
 
-	pp->msi_domain = pci_msi_create_irq_domain(fwnode, &sunxi_msi_info, pp->irq_domain);
-	if (!pp->msi_domain) {
-		sunxi_err(pp->dev, "failed to create MSI domain\n");
-		irq_domain_remove(pp->irq_domain);
+	pp->irq_domain = msi_create_parent_irq_domain(&info, &sunxi_msi_parent_ops);
+	if (!pp->irq_domain) {
+		dev_err(pp->dev, "Failed to create IRQ domain\n");
 		return -ENOMEM;
 	}
 
 	return 0;
 }
 
-static void sunxi_free_msi_domains(struct sunxi_pcie_port *pp)
+static void sunxi_free_domains(struct sunxi_pcie_port *pp)
 {
-	irq_domain_remove(pp->msi_domain);
 	irq_domain_remove(pp->irq_domain);
 }
 
@@ -444,7 +441,7 @@ static struct pci_ops sunxi_pcie_ops = {
 	.write = sunxi_pcie_wr_conf,
 };
 
-int sunxi_pcie_host_init(struct sunxi_pcie_port *pp)
+static int sunxi_pcie_host_init(struct sunxi_pcie_port *pp)
 {
 	struct device *dev = pp->dev;
 	struct resource_entry *win;
@@ -491,7 +488,7 @@ int sunxi_pcie_host_init(struct sunxi_pcie_port *pp)
 	sunxi_allocate_intx_domains(pp);
 
 	if (pci_msi_enabled() && !pp->has_its) {
-		ret = sunxi_allocate_msi_domains(pp);
+		ret = sunxi_allocate_domains(pp);
 		if (ret)
 			return ret;
 
@@ -511,7 +508,7 @@ int sunxi_pcie_host_init(struct sunxi_pcie_port *pp)
 	if (ret) {
 		if (pci_msi_enabled() && !pp->has_its) {
 			sunxi_pcie_free_msi(pp);
-			sunxi_free_msi_domains(pp);
+			sunxi_free_domains(pp);
 		}
 		sunxi_free_intx_domains(pp);
 
@@ -620,7 +617,7 @@ static int sunxi_pcie_host_wait_for_speed_change(struct sunxi_pcie *pci)
 	return -ETIMEDOUT;
 }
 
-void sunxi_pcie_host_change_nsi_port_bwl(struct sunxi_pcie *pci, int gen)
+static void sunxi_pcie_host_change_nsi_port_bwl(struct sunxi_pcie *pci, int gen)
 {
 #if IS_ENABLED(CONFIG_AW_NSI)
 	int i, bwl;
@@ -647,7 +644,7 @@ void sunxi_pcie_host_change_nsi_port_bwl(struct sunxi_pcie *pci, int gen)
 #endif
 }
 
-int sunxi_pcie_host_read_speed(struct sunxi_pcie *pci)
+static int sunxi_pcie_host_read_speed(struct sunxi_pcie *pci)
 {
 	int val, gen;
 
@@ -778,10 +775,6 @@ static irqreturn_t sunxi_pcie_host_msi_irq_handler(int irq, void *arg)
 	struct sunxi_pcie *pci = to_sunxi_pcie_from_pp(pp);
 	unsigned long val;
 	int i, pos;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-	u32 hwirq;
-	u32 virq;
-#endif
 	u32 status;
 	irqreturn_t ret = IRQ_NONE;
 
@@ -800,13 +793,7 @@ static irqreturn_t sunxi_pcie_host_msi_irq_handler(int irq, void *arg)
 			sunxi_pcie_writel_dbi(pci,
 					PCIE_MSI_INTR_STATUS + (i * MSI_REG_CTRL_BLOCK_SIZE), 1 << pos);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-			hwirq = i * MAX_MSI_IRQS_PER_CTRL + pos;
-			virq = irq_find_mapping(pp->irq_domain, hwirq);
-			generic_handle_irq(virq);
-#else
 			generic_handle_domain_irq(pp->irq_domain, (i * MAX_MSI_IRQS_PER_CTRL) + pos);
-#endif
 			pos++;
 		}
 	}
@@ -864,7 +851,7 @@ void sunxi_pcie_host_remove_port(struct sunxi_pcie *pci)
 
 	if (pci_msi_enabled() && !pp->has_its) {
 		sunxi_pcie_free_msi(pp);
-		sunxi_free_msi_domains(pp);
+		sunxi_free_domains(pp);
 	}
 	sunxi_free_intx_domains(pp);
 }

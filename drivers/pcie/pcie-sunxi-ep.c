@@ -263,13 +263,8 @@ static const struct of_device_id sunxi_pcie_ep_of_match[] = {
 	{},
 };
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-static int sunxi_pcie_ep_write_header(struct pci_epc *epc, u8 func_no,
-					 struct pci_epf_header *hdr)
-#else
 static int sunxi_pcie_ep_write_header(struct pci_epc *epc, u8 func_no, u8 vfunc_no,
 					 struct pci_epf_header *hdr)
-#endif
 {
 	struct sunxi_pcie_ep *ep = epc_get_drvdata(epc);
 	struct sunxi_pcie *pci = to_sunxi_pcie_from_ep(ep);
@@ -296,13 +291,8 @@ static int sunxi_pcie_ep_write_header(struct pci_epc *epc, u8 func_no, u8 vfunc_
 	return 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-static int sunxi_pcie_ep_set_bar(struct pci_epc *epc, u8 func_no,
-					struct pci_epf_bar *epf_bar)
-#else
 static int sunxi_pcie_ep_set_bar(struct pci_epc *epc, u8 func_no, u8 vfunc_no,
 					struct pci_epf_bar *epf_bar)
-#endif
 {
 	struct sunxi_pcie_ep *ep = epc_get_drvdata(epc);
 	struct sunxi_pcie *pci = to_sunxi_pcie_from_ep(ep);
@@ -383,13 +373,8 @@ static int sunxi_pcie_ep_set_bar(struct pci_epc *epc, u8 func_no, u8 vfunc_no,
 	return 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-static void sunxi_pcie_ep_clear_bar(struct pci_epc *epc, u8 func_no,
-				       struct pci_epf_bar *epf_bar)
-#else
 static void sunxi_pcie_ep_clear_bar(struct pci_epc *epc, u8 func_no, u8 vfunc_no,
 				       struct pci_epf_bar *epf_bar)
-#endif
 {
 	struct sunxi_pcie_ep *ep = epc_get_drvdata(epc);
 	struct sunxi_pcie *pci = to_sunxi_pcie_from_ep(ep);
@@ -404,13 +389,8 @@ static void sunxi_pcie_ep_clear_bar(struct pci_epc *epc, u8 func_no, u8 vfunc_no
 	ep->bar_to_atu[bar] = 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-static void sunxi_pcie_ep_unmap_addr(struct pci_epc *epc, u8 func_no,
-				  phys_addr_t addr)
-#else
 static void sunxi_pcie_ep_unmap_addr(struct pci_epc *epc, u8 func_no, u8 vfunc_no,
 				  phys_addr_t addr)
-#endif
 {
 	int ret;
 	u32 atu_index;
@@ -425,13 +405,8 @@ static void sunxi_pcie_ep_unmap_addr(struct pci_epc *epc, u8 func_no, u8 vfunc_n
 	clear_bit(atu_index, ep->ob_window_map);
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-static int sunxi_pcie_ep_map_addr(struct pci_epc *epc, u8 func_no,
-			       phys_addr_t cpu_addr, u64 pci_addr, size_t size)
-#else
 static int sunxi_pcie_ep_map_addr(struct pci_epc *epc, u8 func_no, u8 vfunc_no,
 			       phys_addr_t cpu_addr, u64 pci_addr, size_t size)
-#endif
 {
 	int ret;
 	struct sunxi_pcie_ep *ep = epc_get_drvdata(epc);
@@ -446,13 +421,8 @@ static int sunxi_pcie_ep_map_addr(struct pci_epc *epc, u8 func_no, u8 vfunc_no,
 	return 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-static int sunxi_pcie_ep_set_msi(struct pci_epc *epc, u8 func_no,
-				    u8 interrupts)
-#else
 static int sunxi_pcie_ep_set_msi(struct pci_epc *epc, u8 func_no, u8 vfunc_no,
 				    u8 interrupts)
-#endif
 {
 	struct sunxi_pcie_ep *ep = epc_get_drvdata(epc);
 	struct sunxi_pcie *pci = to_sunxi_pcie_from_ep(ep);
@@ -477,11 +447,7 @@ static int sunxi_pcie_ep_set_msi(struct pci_epc *epc, u8 func_no, u8 vfunc_no,
 	return 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-static int sunxi_pcie_ep_get_msi(struct pci_epc *epc, u8 func_no)
-#else
 static int sunxi_pcie_ep_get_msi(struct pci_epc *epc, u8 func_no, u8 vfunc_no)
-#endif
 {
 	struct sunxi_pcie_ep *ep = epc_get_drvdata(epc);
 	struct sunxi_pcie *pci = to_sunxi_pcie_from_ep(ep);
@@ -545,45 +511,24 @@ static int sunxi_pcie_ep_send_msi_irq(struct sunxi_pcie_ep *ep, u8 func_no,
 	msg_addr = ((u64)msg_addr_upper) << 32 |
 			(msg_addr_lower & ~aligned_offset);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-	ret = sunxi_pcie_ep_map_addr(epc, func_no, ep->msi_mem_phys, msg_addr,
-				  epc->mem->window.page_size);
-#else
 	ret = sunxi_pcie_ep_map_addr(epc, func_no, 0, ep->msi_mem_phys, msg_addr,
 				  epc->mem->window.page_size);
-#endif
 	if (ret)
 		return ret;
 
 	writel(msg_data | (interrupt_num - 1), ep->msi_mem + aligned_offset);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-	sunxi_pcie_ep_unmap_addr(epc, func_no, ep->msi_mem_phys);
-#else
 	sunxi_pcie_ep_unmap_addr(epc, func_no, 0, ep->msi_mem_phys);
-#endif
 	return 0;
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-static int sunxi_pcie_ep_raise_irq(struct pci_epc *epc, u8 fn,
-				      enum pci_epc_irq_type type, u16 interrupt_num)
-#elif (KERNEL_VERSION(5, 15, 0) <= LINUX_VERSION_CODE) && (LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0))
-static int sunxi_pcie_ep_raise_irq(struct pci_epc *epc, u8 fn, u8 vfn,
-				      enum pci_epc_irq_type type, u16 interrupt_num)
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
 static int sunxi_pcie_ep_raise_irq(struct pci_epc *epc, u8 fn, u8 vfn,
 				      unsigned int  type, u16 interrupt_num)
-#endif
 {
 	struct sunxi_pcie_ep *ep = epc_get_drvdata(epc);
 
 	switch (type) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
-	case PCI_EPC_IRQ_MSI:
-#else
 	case PCI_IRQ_MSI:
-#endif
 		return sunxi_pcie_ep_send_msi_irq(ep, fn, interrupt_num);
 	default:
 		return -EINVAL;
@@ -608,16 +553,6 @@ static void sunxi_pcie_ep_stop(struct pci_epc *epc)
 	sunxi_pcie_stop_link(pci);
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
-static const struct pci_epc_features sunxi_pcie_epc_features = {
-	.linkup_notifier	= false,
-	.msi_capable		= true,
-	.msix_capable		= false,
-	.reserved_bar		= BIT(BAR_2),
-	.bar_fixed_64bit	= BIT(BAR_0) | BIT(BAR_4),
-	.align			= SZ_1M,
-};
-#else
 static const struct pci_epc_features sunxi_pcie_epc_features = {
 	.linkup_notifier	= false,
 	.msi_capable		= true,
@@ -627,13 +562,8 @@ static const struct pci_epc_features sunxi_pcie_epc_features = {
 	.bar[BAR_4]		= { .only_64bit = true, },
 	.align			= SZ_1M,
 };
-#endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
-static const struct pci_epc_features *sunxi_pcie_ep_get_features(struct pci_epc *epc, u8 func_no)
-#else
 static const struct pci_epc_features *sunxi_pcie_ep_get_features(struct pci_epc *epc, u8 func_no, u8 vfunc_no)
-#endif
 {
 	return &sunxi_pcie_epc_features;
 }
