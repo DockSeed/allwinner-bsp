@@ -102,6 +102,7 @@ This table adapts this page from linux-sunxi: https://linux-sunxi.org/Linux_main
 |       |Controller|et7304      |**MAIN**|A7Z 7.1[12]   |
 |       |Controller|husb311     |**MAIN**|A7S 7.1[12]   |
 |AXP PMU|       |axp8191        |BSP    |MAIN WIP[10]   |
+|PWM FAN|       |pwm-fan        |**MAIN**|              |
 
 **Status**: 
 - BSP: BSP drivers ported for 6.18.y
@@ -147,3 +148,7 @@ Thanks to icenowy & iuncuim for assistance with debugging.
 Radxa maintains a dedicated [repo](https://github.com/radxa-pkg/aic8800) for AIC8800 drivers. Releases there should be compatible with Debian-based distributions. \
 The AIC8800 is USB-based and not listed in the device tree. Drivers included here are stripped from Radxa’s repo ([this release](https://github.com/radxa-pkg/aic8800/releases/tag/5.0%2Bgit20260123.5f7be68d-5)) \
 Firmware is required. `dmesg` will warn if it’s missing. Please put the firmware [here](https://github.com/radxa-pkg/aic8800/tree/main/src/USB/driver_fw/fw) in the correct place (put `aic8800D80` under `/lib/firmware/`). 
+
+### PWM Fan
+The stock thermal zone configuration only drives the PWM fan at full speed. \
+By using the DDR thermal zone and switching its thermal policy to `step_wise` via a `udev` rule, the fan speed can be adjusted more dynamically based on temperature.

@@ -644,23 +644,17 @@
 			cooling-maps {
 				map0 {
 					trip = <&gpu_threshold>;
-					cooling-device = <&gpu
-					0
-					0>;
+					cooling-device = <&gpu 0 0>;
 					contribution = <1024>;
 				};
 				map1 {
 					trip = <&gpu_target>;
-					cooling-device = <&gpu
-					0
-					3>;
+					cooling-device = <&gpu 0 3>;
 					contribution = <1024>;
 				};
 				map2 {
 					trip = <&gpu_crit>;
-					cooling-device = <&gpu
-					3
-					3>;
+					cooling-device = <&gpu 3 3>;
 					contribution = <1024>;
 				};
 

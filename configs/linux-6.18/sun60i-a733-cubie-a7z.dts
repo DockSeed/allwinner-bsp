@@ -52,6 +52,14 @@
 		};
 	};
 
+	fan0: pwm-fan {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		cooling-levels = <1 50 102 170 255>;
+		fan-supply = <&reg_dc1sw1>;
+		pwms = <&pwm1 9 25000 0>;
+	};
+
 	phy_switcher: phy_switcher@10 {
 		compatible = "allwinner,sunxi-phy-switcher";
 		reg = <0x0 0x10 0x0 0x0>;
@@ -582,16 +590,6 @@
 	};
 };
 
-&soc {
-	fan0: pwm-fan {
-		compatible = "pwm-fan";
-		#cooling-cells = <2>;
-		cooling-levels = <0 50 102 170 255>;
-		fan-supply = <&reg_dc1sw1>;
-		pwms = <&pwm1 9 25000 0>;
-	};
-};
-
 &uart0 {
 	// pinctrl-names = "default", "sleep";
 	// pinctrl-0 = <&uart0_pins_active>;
@@ -676,65 +674,55 @@
 	status = "okay";
 };
 
-&cpul_thres {
-	temperature = <70000>;
+&ddr_trips {
+	fan_step0: trip-point@0 {
+		temperature = <40000>;
+		hysteresis = <2000>;
+		type = "active";
+	};
+
+	fan_step1: trip-point@1 {
+		temperature = <45000>;
+		hysteresis = <2000>;
+		type = "active";
+	};
+
+	fan_step2: trip-point@2 {
+		temperature = <50000>;
+		hysteresis = <2000>;
+		type = "active";
+	};
+
+	fan_step3: trip-point@3 {
+		temperature = <55000>;
+		hysteresis = <5000>;
+		type = "active";
+	};
 };
 
-&cpul_overshot {
-	temperature = <90000>;
-};
+&ddr_thermal_zone {
+	polling-delay-passive = <100>;
+	polling-delay = <1000>;
 
-&cpul_idle_zone {
 	cooling-maps {
 		map0 {
-			cooling-device = <&cpu2_idle 0 100>,
-						<&cpu3_idle 0 100>,
-						<&cpu4_idle 0 100>,
-						<&cpu5_idle 0 100>;
+			trip = <&fan_step0>;
+			cooling-device = <&fan0 0 1>;
 		};
-	};
-};
 
-&cpul_target {
-	temperature = <60000>;
-	hysteresis = <2000>;
-};
-
-&cpul_threshold{
-	type = "active";
-	temperature = <60000>;
-	hysteresis = <2000>;
-};
-
-&cpul_thermal_zone {
-	sustainable-power = <3000>;
-	cooling-maps {
 		map1 {
-			trip = <&cpul_threshold>;
-			cooling-device = <&fan0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
-			contribution = <1024>;
+			trip = <&fan_step1>;
+			cooling-device = <&fan0 1 2>;
 		};
-	};
-};
 
-&cpub_target {
-	temperature = <60000>;
-    hysteresis = <2000>;
-};
+		map2 {
+			trip = <&fan_step2>;
+			cooling-device = <&fan0 2 3>;
+		};
 
-&cpub_threshold {
-    type = "active";
-    temperature = <60000>;
-    hysteresis = <2000>;
-};
-
-&cpub_thermal_zone {
-	sustainable-power = <4000>;
-	cooling-maps {
-		map1 {
-			trip = <&cpub_threshold>;
-			cooling-device = <&fan0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
-			contribution = <1024>;
+		map3 {
+			trip = <&fan_step3>;
+			cooling-device = <&fan0 3 4>;
 		};
 	};
 };
@@ -1474,16 +1462,6 @@
 	key4 = <880 172>;
 	status = "okay";
 };
-
-// &gpadc {
-// 	#address-cells = <1>;
-// 	#size-cells = <0>;
-// 	status = "okay";
-
-// 	channel@0 {
-// 		reg = <0>;
-// 	};
-// };
 
 // &gpadc0 {
 // 	channel_num = <8>;
