@@ -787,7 +787,18 @@
 	mmc-hs200-1_8v;
 	mmc-hs400-1_8v;
 	vmmc-supply = <&reg_dc1sw2>;
-	vqmmc-supply = <&reg_cldo5>;
+	/*
+	 * vqmmc-supply (cldo5) ENTFERNT — das war die Wurzel des intermittenten
+	 * SD-Init "mmc: error -110". mmc0(SD) UND mmc2(eMMC) hatten BEIDE
+	 * vqmmc-supply = <&reg_cldo5>. Beim frühen, gleichzeitigen Probe (beide
+	 * built-in, ~0.2-0.36s) fightten beide Hosts um die geteilte cldo5-Rail:
+	 * der zweite vqmmc-Switch wird restricted -> SD-Init-Timeout -110 -> kein
+	 * mmcblk -> root-Hang. Boot-zu-Boot Glücksspiel (mal gewinnt einer, mal
+	 * kollidieren beide). Nimmt man mmc2 von cldo5, fasst nur noch die SD die
+	 * Rail an -> kein Konkurrent. Verifiziert: 2/2 Boots inkl. Reboot sauber,
+	 * -110 = 0. eMMC-IO ist ohnehin fix 1.8V (mmc-hs200/hs400-1_8v) und braucht
+	 * keinen schaltbaren vqmmc; vmmc(dc1sw2) bleibt als Karten-/Chip-Versorgung.
+	 */
 	max-frequency = <200000000>;
 	status = "okay";
 };
