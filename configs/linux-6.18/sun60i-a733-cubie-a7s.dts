@@ -762,6 +762,17 @@
 
 &mmc0 {
 	cd-gpios = <&pio PF 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+	/*
+	 * broken-cd -> MMC_CAP_NEEDS_POLL: poll-rescan the SD ~1/s. cldo5 (the SD
+	 * vqmmc rail) is shared with the combophy (serdes1v8); at boot the two
+	 * regulator ops race transiently, so the SD's first init can time out
+	 * (mmc: error -110) before the combophy settles (~0.4s). Without a re-scan
+	 * the root device never appears and boot hangs (systemd waits forever).
+	 * Polling makes mmc-core retry the init until it succeeds -- doing
+	 * deterministically what Armbian's mmc_rescan does by luck on the same
+	 * board (same shared rail). cd-gpios kept for hotplug.
+	 */
+	broken-cd;
 	bus-width = <4>;
 	sd-uhs-sdr50;
 	sd-uhs-ddr50;
