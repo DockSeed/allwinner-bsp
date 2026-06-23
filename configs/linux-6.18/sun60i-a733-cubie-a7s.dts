@@ -1405,17 +1405,20 @@
 	status = "okay";
 };
 
-/* A7S has NO HDMI/TV connector -- the only display is DP-Alt over USB-C (edp0
- * via combophy). tv0/tv1 are the SoC's HDMI/TV-encoder outputs with no physical
- * sink on this board; leaving them enabled makes the sunxi DRM master try to bind
- * connectorless pipes ("Get sunxi drm device fail" / "init connecting not found")
- * and is pure phantom init. Disable -> DRM binds only the real edp0/DP path. */
+/* tv0 (tcon3) / tv1 (tcon4) = the SoC's TV-TCON outputs. They MUST stay enabled:
+ * the DP-Alt path binds edp0 THROUGH a TV-TCON ("tcon_tv"). Disabling them (an
+ * earlier "no HDMI connector" cleanup) makes the sunxi-drm edp bind fail with
+ *   [drm:sunxi_drm_edp_bind] *ERROR* tcon_tv for edp not found!
+ *   sunxi-drm: failed to bind 5740000.edp0 ... -1  -> drm_edp probe failed -1
+ * i.e. NO DP-Alt display at all. Verified against Armbian (tcon3+tcon4 both okay,
+ * DP-Alt works). The HDMI leaf (hdmi0/hdmi_codec) IS disabled below — no HDMI
+ * connector exists — but the TV-TCONs feed the DP path and must remain enabled. */
 &tv0 {
-	status = "disabled";
+	status = "okay";
 };
 
 &tv1 {
-	status = "disabled";
+	status = "okay";
 };
 
 &edp0 {
