@@ -1420,7 +1420,11 @@
 	edp_ssc_en = <0>;
 	edp_ssc_mode = <0>;
 
-	edp_lane_rate = <2>;
+	/* HBR 2.7G (=1), NOT HBR2 5.4G (=2). The A733 USB-C DP-Alt combo-phy does
+	 * not lock CR training at 5.4G -> 'CR training lane0-3 FAIL' + the EDP worker
+	 * retries forever, which also keeps cldo5 (shared with the SD vqmmc) busy and
+	 * starves SD init. Matches Armbian's working value (edp_lane_rate=1). */
+	edp_lane_rate = <1>;
 	edp_lane_cnt = <4>;
 	extcon = <&serdes>;
 
