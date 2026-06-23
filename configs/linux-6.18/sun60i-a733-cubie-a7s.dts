@@ -762,17 +762,11 @@
 
 &mmc0 {
 	cd-gpios = <&pio PF 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
-	/*
-	 * broken-cd -> MMC_CAP_NEEDS_POLL: poll-rescan the SD ~1/s. cldo5 (the SD
-	 * vqmmc rail) is shared with the combophy (serdes1v8); at boot the two
-	 * regulator ops race transiently, so the SD's first init can time out
-	 * (mmc: error -110) before the combophy settles (~0.4s). Without a re-scan
-	 * the root device never appears and boot hangs (systemd waits forever).
-	 * Polling makes mmc-core retry the init until it succeeds -- doing
-	 * deterministically what Armbian's mmc_rescan does by luck on the same
-	 * board (same shared rail). cd-gpios kept for hotplug.
-	 */
-	broken-cd;
+	/* broken-cd ENTFERNT (Armbian-Paritaet): Armbians funktionierendes mmc0 hat NUR
+	 * cd-gpios, KEIN broken-cd. broken-cd -> MMC_CAP_NEEDS_POLL machte einen ~1/s
+	 * Poll-Loop der cldo5 dauernd anfasst und den SD-Init DETERMINISTISCH failen
+	 * liess (statt frueherer Intermittenz). Verifiziert: Armbians mmc0-DTB =
+	 * compatible sun55i-a523-mmc/d1 + cd-gpios, ohne broken-cd. */
 	bus-width = <4>;
 	sd-uhs-sdr50;
 	sd-uhs-ddr50;
@@ -1555,3 +1549,19 @@
 	sid-supply = <&reg_dldo1>;
 	voltage = <1800>;
 };
+
+/* =====================================================================
+ * Board-Cleanup: nicht bestueckte A733-SoC-Peripherie aus. Der SoC-dtsi
+ * aktiviert generisch ALLES was der A733 koennte; dieses Board hat es aber nicht.
+ * tv0/tv1 (HDMI/TV-TCONs) sind oben bereits disabled. Hier zusaetzlich:
+ *   - UFS: A7S/A7A hat KEIN UFS-Device -> generischer Init failt mit
+ *     "ufs: Device not present" + link-startup-timeout (x4-Retry-Schleife).
+ *   - HDMI-Controller + HDMI-Audio-Codec: kein HDMI-Stecker (nur USB-C-DP-Alt).
+ * BEHALTEN (DP-Alt + dessen Audio): de/vo1/edp0/serdes/combophy + i2s3
+ * (soundcard "allwinner-edp" = DP-Audio ueber edp0). mmc2(eMMC) bleibt (optional
+ * geloetet). Ziel: nur real bestueckte HW initialisieren -> sauberer Boot,
+ * keine Phantom-Probe-Schleifen, mehr Probe-Timing-Marge fuer SDC0.
+ * ===================================================================== */
+&ufs        { status = "disabled"; };  /* kein UFS-Device am Board */
+&hdmi0      { status = "disabled"; };  /* kein HDMI-Stecker (nur DP-Alt) */
+&hdmi_codec { status = "disabled"; };  /* HDMI-Audio (kein HDMI); DP-Audio = i2s3/edp0 bleibt */
