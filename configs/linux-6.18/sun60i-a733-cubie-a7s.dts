@@ -1400,12 +1400,17 @@
 	status = "okay";
 };
 
+/* A7S has NO HDMI/TV connector -- the only display is DP-Alt over USB-C (edp0
+ * via combophy). tv0/tv1 are the SoC's HDMI/TV-encoder outputs with no physical
+ * sink on this board; leaving them enabled makes the sunxi DRM master try to bind
+ * connectorless pipes ("Get sunxi drm device fail" / "init connecting not found")
+ * and is pure phantom init. Disable -> DRM binds only the real edp0/DP path. */
 &tv0 {
-	status = "okay";
+	status = "disabled";
 };
 
 &tv1 {
-	status = "okay";
+	status = "disabled";
 };
 
 &edp0 {
